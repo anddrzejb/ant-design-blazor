@@ -1,0 +1,53 @@
+﻿@namespace AntDesign
+@inherits AntInputComponentBase<(double, double)>
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="@ClassMapper.Class" id="@Id" @ref="Ref">
+    @if (Included) //what is this?
+    {
+        <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1" style="@_trackStyle">
+        </div>
+    }
+    @if (Parent.HasTooltip)
+    {
+        <Tooltip Title="@Parent.TipFormatter(_leftValue)" Style="display: inline;" Visible="_tooltipLeftVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLeft">
+            <Unbound>
+                <div tabindex="0" class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1" role="slider" aria-disabled="@Disabled.ToString()" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="@_leftHandleStyle" @ref="@context.Current" @onmousedown="(e) => OnMouseDownEdge(e, false)">
+                </div>
+            </Unbound>
+        </Tooltip>
+        <Tooltip Title="@Parent.TipFormatter(_rightValue)" Style="display: inline;" Visible="_tooltipRightVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipRight">
+            <Unbound>
+                <div tabindex="0" class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2" role="slider" aria-disabled="@Disabled.ToString()" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="@_rightHandleStyle" @ref="@context.Current" @onmousedown="(e) => OnMouseDownEdge(e, true)">
+                </div>
+            </Unbound>
+        </Tooltip>
+    }
+    else
+    {
+        <div tabindex="0" 
+             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1" 
+             role="slider" 
+             aria-disabled="@Disabled.ToString()" 
+             aria-valuenow="30" 
+             aria-valuemin="@Parent.Min" 
+             aria-valuemax="@Parent.Max" 
+             style="@_leftHandleStyle" 
+             @ref="_leftHandle" 
+             @onmousedown="(e) => OnMouseDownEdge(e, false)">
+        </div>
+        <div tabindex="0" 
+             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2" 
+             role="slider" 
+             aria-disabled="@Disabled.ToString()" 
+             aria-valuenow="30" 
+             aria-valuemin="0" 
+             aria-valuemax="100" 
+             style="@_rightHandleStyle" 
+             @ref="_rightHandle" 
+             @onmousedown="(e) => OnMouseDownEdge(e, true)">
+        </div>
+    }
+
+</div>
+

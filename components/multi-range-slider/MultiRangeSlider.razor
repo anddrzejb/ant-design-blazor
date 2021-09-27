@@ -1,0 +1,42 @@
+﻿@namespace AntDesign
+@inherits AntInputComponentBase<IEnumerable<(double, double)>>
+@using Microsoft.AspNetCore.Components.Web
+<div style="display: inline; overflow-x: auto;">
+    <div class="@ClassMapper.Class" style="user-select:none;margin-left:0;@(@_trackWidth + @Style)" id="@Id" @ref="Ref"
+         @onmousedown="(e) => OnMouseDown(e)">
+        <div class="ant-multi-range-slider-rail">
+        </div>
+    
+        <div class="ant-multi-range-slider-step">
+            @if (Marks != null)
+            {
+                @foreach (RangeItemMark mark in Marks)
+                {
+                    <span class="ant-multi-range-slider-dot @IsActiveMark(mark.Key)" style=@($"{(Vertical ? "bottom" : "left")}: {SetMarkPosition(mark.Key)};")></span>
+                }
+            }
+        </div>
+
+        <CascadingValue Value="@this" Name="Range" IsFixed>
+            @if (ChildContent != null)
+            {        
+                @ChildContent
+            }
+            else
+            {
+                <RangeItem DefaultValue="(20, 50)"/>
+                <RangeItem DefaultValue="(55, 70)"/>
+                <RangeItem DefaultValue="(75, 100)"/>
+            }
+        </CascadingValue>
+        <div class="ant-multi-range-slider-mark">
+            @if (Marks != null)
+            {
+                @foreach (RangeItemMark mark in Marks)
+                {
+                    <span class="ant-multi-range-slider-mark-text ant-multi-range-slider-mark-text-active" style=@($"{(Vertical ? "bottom" : "left")}: {SetMarkPosition(mark.Key)}; {(Vertical ? "margin-bottom: -50%;" : "transform: translateX(-50%);")}" + mark.Style)>@mark.Value</span>
+                }
+            }
+        </div>
+    </div>
+</div>
