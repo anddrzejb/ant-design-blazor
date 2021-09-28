@@ -3,22 +3,39 @@
 @using Microsoft.AspNetCore.Components.Web
 
 <div class="@ClassMapper.Class" id="@Id" @ref="Ref">
-    @if (Included) //what is this?
-    {
-        <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1" style="@_trackStyle">
-        </div>
-    }
+    <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="@_trackStyle" @onmousedown="@OnRangeItemClick">
+    </div>
     @if (Parent.HasTooltip)
     {
         <Tooltip Title="@Parent.TipFormatter(_leftValue)" Style="display: inline;" Visible="_tooltipLeftVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLeft">
             <Unbound>
-                <div tabindex="0" class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1" role="slider" aria-disabled="@Disabled.ToString()" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="@_leftHandleStyle" @ref="@context.Current" @onmousedown="(e) => OnMouseDownEdge(e, false)">
+                <div tabindex="0" 
+                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1" 
+                     role="slider" 
+                     aria-disabled="@Disabled.ToString()" 
+                     aria-valuenow="30" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100" 
+                     style="@(_leftHandleStyle+_focusZIndex)" 
+                     @ref="@context.Current" 
+                     @onmousedown="e => OnMouseDownEdge(e, false)"
+                     @ondblclick="e => OnDoubleClick(1)">
                 </div>
             </Unbound>
         </Tooltip>
         <Tooltip Title="@Parent.TipFormatter(_rightValue)" Style="display: inline;" Visible="_tooltipRightVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipRight">
             <Unbound>
-                <div tabindex="0" class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2" role="slider" aria-disabled="@Disabled.ToString()" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="@_rightHandleStyle" @ref="@context.Current" @onmousedown="(e) => OnMouseDownEdge(e, true)">
+                <div tabindex="0" 
+                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2" 
+                     role="slider" 
+                     aria-disabled="@Disabled.ToString()" 
+                     aria-valuenow="30" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100" 
+                     style="@(_rightHandleStyle+_focusZIndex)" 
+                     @ref="@context.Current" 
+                     @onmousedown="e => OnMouseDownEdge(e, true)"
+                     @ondblclick="e => OnDoubleClick(2)">
                 </div>
             </Unbound>
         </Tooltip>
@@ -32,9 +49,10 @@
              aria-valuenow="30" 
              aria-valuemin="@Parent.Min" 
              aria-valuemax="@Parent.Max" 
-             style="@_leftHandleStyle" 
+             style="@(_leftHandleStyle+_focusZIndex)" 
              @ref="_leftHandle" 
-             @onmousedown="(e) => OnMouseDownEdge(e, false)">
+             @onmousedown="e => OnMouseDownEdge(e, false)"
+             @ondblclick="e => OnDoubleClick(1)">
         </div>
         <div tabindex="0" 
              class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2" 
@@ -43,9 +61,10 @@
              aria-valuenow="30" 
              aria-valuemin="0" 
              aria-valuemax="100" 
-             style="@_rightHandleStyle" 
+             style="@(_rightHandleStyle+_focusZIndex)" 
              @ref="_rightHandle" 
-             @onmousedown="(e) => OnMouseDownEdge(e, true)">
+             @onmousedown="(e) => OnMouseDownEdge(e, true)"
+             @ondblclick="e => OnDoubleClick(1)">
         </div>
     }
 

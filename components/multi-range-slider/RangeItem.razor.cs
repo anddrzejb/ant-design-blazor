@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AntDesign.core.Extensions;
@@ -23,6 +24,9 @@ namespace AntDesign
         private string _leftHandleStyle = "left: 0%; right: auto; transform: translateX(-50%);";
         private string _rightHandleStyle = "left: 0%; right: auto; transform: translateX(-50%);";
         private string _trackStyle = "left: 0%; width: 0%; right: auto;";
+        private bool _isFocused;
+        private string _focusClass = "";
+        private string _focusZIndex = "z-index: auto;";
         private bool _mouseDown;
         private bool _mouseMove;
         private bool _right = true;
@@ -31,6 +35,13 @@ namespace AntDesign
         private double _initialRightValue;
         private Tooltip _toolTipRight;
         private Tooltip _toolTipLeft;
+
+        private bool _hasAttachedEdge;
+        private int _attachedHandleNo;
+        private RangeItem _attachedItem;
+        private Action _changeAttachedItem;
+        internal bool Master { get; set; }
+        internal bool Slave { get; set; }
 
         private string RightHandleStyleFormat
         {
@@ -146,12 +157,6 @@ namespace AntDesign
         public bool Dots { get; set; }
 
         /// <summary>
-        /// Make effect when <see cref="Marks"/> not null, true means containment and false means coordinative
-        /// </summary>
-        [Parameter]
-        public bool Included { get; set; } = true;
-
-        /// <summary>
         /// The maximum value the slider can slide to
         /// </summary>
 
@@ -231,7 +236,15 @@ namespace AntDesign
             get => _leftValue;
             set
             {
-                double candidate = Clamp(value, Parent.GetLeftBoundary(Id), Parent.GetRightBoundary(Id));
+                double candidate;
+                if (!Slave)
+                {
+                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, 1, _attachedHandleNo), Parent.GetRightBoundary(Id, 1, _attachedHandleNo));
+                }
+                else
+                {
+                    candidate = value;
+                }
                 if (_leftValue != candidate)
                 {
                     _leftValue = candidate;
@@ -250,8 +263,16 @@ namespace AntDesign
             get => _rightValue;
             set
             {
-                double candidate = Clamp(value, LeftValue, Parent.GetRightBoundary(Id));
-
+                //Console.WriteLine($"RightValue change => clamp {value} based on LeftValue={LeftValue} and RightBoundary={Parent.GetRightBoundary(Id, _hasAttachedEdge)}");
+                double candidate;
+                if (!Slave)
+                {
+                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, 2, _attachedHandleNo), Parent.GetRightBoundary(Id, 2, _attachedHandleNo));
+                }
+                else
+                {
+                    candidate = value;
+                }
                 if (_rightValue != candidate)
                 {
                     _rightValue = candidate;
@@ -453,6 +474,75 @@ namespace AntDesign
             _mouseDown = !Disabled;
         }
 
+        private void OnRangeItemClick(MouseEventArgs args)
+        {
+            if (!_isFocused)
+            {
+                SetFocus(true);
+                Parent.SetRangeItemFocus(this, true);
+            }
+        }
+
+        internal void SetFocus(bool isFocused)
+        {
+            _isFocused = isFocused;
+            if (_isFocused)
+            {
+                _focusClass = "ant-multi-range-slider-track-focus";
+                _focusZIndex = "z-index: 1000;"; //just below default overlay zindex
+            }
+            else
+            {
+                _focusClass = "";
+                _focusZIndex = "z-index: auto;";
+            }
+            //Console.WriteLine($"SetFocus {Id}, {_focusClass}");
+        }
+
+        private void OnDoubleClick(int handleNo)
+        {
+            if (_attachedHandleNo != handleNo)
+            {
+                RangeItem candidate = handleNo == 1 ? Parent.GetLeftNeighbour(Id) : Parent.GetRightNeighbour(Id);
+                if (candidate is null)
+                {
+                    return;
+                }
+
+                if (handleNo == 1 && candidate.RightValue == LeftValue
+                    ||
+                    handleNo == 2 && candidate.LeftValue == RightValue)
+                {
+                    _attachedItem = candidate;
+                    _hasAttachedEdge = true;
+                    _attachedHandleNo = handleNo;
+                    Master = true;
+                    _attachedItem.Slave = true;
+                    if (handleNo == 1)
+                    {
+                        _changeAttachedItem = () => _attachedItem.RightValue = this.LeftValue;
+                    }
+                    else
+                    {
+                        _changeAttachedItem = () => _attachedItem.LeftValue = this.RightValue;
+                    }
+
+                    Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, attached: {_attachedItem.LeftValue}-{_attachedItem.RightValue}");
+                    return;
+                }
+            }
+            if (_attachedItem is not null)
+            {
+                _attachedItem.Slave = false;
+            }
+            Master = false;
+            _attachedItem = default;
+            _hasAttachedEdge = false;
+            _changeAttachedItem = default;
+            _attachedHandleNo = 0;
+            Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, attached: reset");
+        }
+
         private double _trackedClientX;
         private double _trackedClientY;
 
@@ -567,11 +657,18 @@ namespace AntDesign
                 double rightV = (Parent.MinMaxDelta * handleNewPosition / sliderLength) + Min;
                 if (rightV < LeftValue)
                 {
-                    _right = false;
-                    if (_mouseDown)
-                        RightValue = _initialLeftValue;
-                    LeftValue = rightV;
-                    await FocusAsync(_leftHandle);
+                    if (!_hasAttachedEdge) //do not allow switching if locked with another range item
+                    {
+                        _right = false;
+                        if (_mouseDown)
+                            RightValue = _initialLeftValue;
+                        LeftValue = rightV;
+                        await FocusAsync(_leftHandle);
+                    }
+                    else 
+                    {
+                        return;
+                    }
                 }
                 else
                 {
@@ -614,24 +711,32 @@ namespace AntDesign
                 double leftV = (Parent.MinMaxDelta * handleNewPosition / sliderLength) + Min;
                 if (leftV > RightValue)
                 {
-                    _right = true;
-                    if (_mouseDown)
-                        LeftValue = _initialRightValue;
-                    RightValue = leftV;
-                    await FocusAsync(_rightHandle);
+                    if (!_hasAttachedEdge) //do not allow switching if locked with another range item
+                    {
+                        _right = true;
+                        if (_mouseDown)
+                            LeftValue = _initialRightValue;
+                        RightValue = leftV;
+                        await FocusAsync(_rightHandle);
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
                 else
                 {
                     LeftValue = leftV;
                 }
             }
+            _changeAttachedItem?.Invoke();
         }
 
         internal void SetStyle()
         {
             var rightHandPercentage = (RightValue - Min) / Parent.MinMaxDelta;
             _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, Formatter.ToPercentWithoutBlank(rightHandPercentage));
-                var leftHandPercentage = (LeftValue - Min) / Parent.MinMaxDelta;
+            var leftHandPercentage = (LeftValue - Min) / Parent.MinMaxDelta;
             _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, Formatter.ToPercentWithoutBlank(leftHandPercentage), Formatter.ToPercentWithoutBlank((RightValue - LeftValue) / Parent.MinMaxDelta));
             _leftHandleStyle = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, Formatter.ToPercentWithoutBlank(leftHandPercentage));
             StateHasChanged();
@@ -648,8 +753,14 @@ namespace AntDesign
                 _leftValue = double.MinValue;
                 _rightValue = double.MaxValue;
             }
-            LeftValue = value.Item1;
-            RightValue = value.Item2;
+            if (LeftValue != value.Item1)
+            {
+                LeftValue = value.Item1;
+            }
+            if (RightValue != value.Item2)
+            {
+                RightValue = value.Item2;
+            }
         }
 
         private bool IsLeftAndRightChanged((double, double) value)

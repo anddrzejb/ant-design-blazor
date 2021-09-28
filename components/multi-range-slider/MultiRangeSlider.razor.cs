@@ -145,7 +145,7 @@ namespace AntDesign
                 }
             }
         }
-
+        
         protected IEnumerable<(double, double)> _values;
         private double _visibleMin;
         private double _visibleMax;
@@ -246,8 +246,9 @@ namespace AntDesign
         }
 
         private List<RangeItem> _items = new();
-        private Dictionary<string, (double minBoundary, double maxBoundary, RangeItem item)> _boundaries;
+//        private Dictionary<string, (double minBoundary, double maxBoundary, RangeItem item)> _boundaries;
         private Dictionary<string, (Func<double> minBoundary, Func<double> maxBoundary, RangeItem item)> _boundaries1;
+        private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries2;
 
         internal void AddRangeItem(RangeItem item)
         {
@@ -255,70 +256,157 @@ namespace AntDesign
             //Console.WriteLine($"Added range item {_items.Count} with set left: {item.LeftValue}, right: {item.RightValue}");
         }
 
-        internal double GetLeftBoundary(string id)
+        internal double GetLeftBoundary(string id, int fromHandle, int attachedHandleNo)
         {
-            if (_isAtfterFirstRender)
+            if (_isAtfterFirstRender && _boundaries2[id].leftNeighbour != default)
             {
-                return _boundaries1[id].minBoundary();
+                if (fromHandle == attachedHandleNo)
+                {
+                    if (attachedHandleNo == 2)
+                    {
+                        return _boundaries2[id].item.LeftValue; //attached is right edge, cannot go beyond current left edge, because the right neighbor (that is attached) cannot exceed beyond current left 
+                    }
+                    else if (attachedHandleNo == 1) //do not allow to exceed neighbor's edge
+                    {
+                        return _boundaries2[id].leftNeighbour.LeftValue;
+                    }
+                }
+                else
+                {
+                    if (attachedHandleNo == 2)
+                    {
+                        return _boundaries2[id].leftNeighbour.RightValue;
+                    }
+                    else if (attachedHandleNo == 1) //do not allow to exceed neighbor's edge
+                    {
+                        return _boundaries2[id].leftNeighbour.LeftValue;
+                    }
+                    else
+                    {
+                        return _boundaries2[id].leftNeighbour.RightValue;
+                    }
+                }
             }
             return Min;
         }
 
-        internal double GetRightBoundary(string id)
+        internal double GetRightBoundary(string id, int fromHandle, int attachedHandleNo)
         {
-            if (_isAtfterFirstRender)
+            if (_isAtfterFirstRender && _boundaries2[id].rightNeighbour != default)
             {
-                return _boundaries1[id].maxBoundary();
+                if (fromHandle == attachedHandleNo)
+                {
+                    if (attachedHandleNo == 1)
+                    {
+                        return _boundaries2[id].rightNeighbour.LeftValue;
+                    }
+                    if (attachedHandleNo == 2)
+                    {
+                        return _boundaries2[id].rightNeighbour.RightValue;
+                    }
+                }
+                else
+                {
+                    if (attachedHandleNo == 1)
+                    {
+                        return _boundaries2[id].item.RightValue;
+                    }
+                    if (attachedHandleNo == 2) //attached edge is right, so right boundary 
+                    {
+                        return _boundaries2[id].item.RightValue;
+                    }
+                    else
+                    {
+                        return _boundaries2[id].rightNeighbour.LeftValue;
+                    }
+                }
+            }
+            if (attachedHandleNo > 0) //because this is with attached, it's max is its own current Right
+            {
+                return _boundaries2[id].item.RightValue;
             }
             return Max;
+        }
+
+        internal RangeItem GetRightNeighbour(string id)
+        {
+            if (_isAtfterFirstRender && _boundaries2[id].rightNeighbour != default)
+            {
+                return _boundaries2[id].rightNeighbour;
+            }
+            return default;
+        }
+
+        internal RangeItem GetLeftNeighbour(string id)
+        {
+            if (_isAtfterFirstRender && _boundaries2[id].leftNeighbour != default)
+            {
+                return _boundaries2[id].leftNeighbour;
+            }
+            return default;
         }
 
         internal void SortRangeItems()
         {
             //TODO: allow adding IComparer or use default
             _items.Sort((s1, s2) => s1.Value.Item1.CompareTo(s2.Value.Item1));
-            _boundaries = new();
+            //_boundaries = new();
             _boundaries1 = new();
-            double minBoundary = Min;
+            _boundaries2 = new();
+            //double minBoundary = Min;
             Func<double> minBoundary1 = () => Min;
+            RangeItem leftNeighbour = default;
             string previousId = "";
-            (double minBoundary, double maxBoundary, RangeItem item) previousItem;
+            //(double minBoundary, double maxBoundary, RangeItem item) previousItem;
             (Func<double> minBoundary, Func<double> maxBoundary, RangeItem item) previousItem1;
+            (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item) previousItem2;
             foreach (var item in _items)
             {
                 if (previousId != string.Empty)
                 {
-                    previousItem = _boundaries[previousId];
-                    previousItem.maxBoundary = item.Value.Item1;
-                    _boundaries[previousId] = previousItem;
+                    //previousItem = _boundaries[previousId];
+                    //previousItem.maxBoundary = item.Value.Item1;
+                    //_boundaries[previousId] = previousItem;
 
                     previousItem1 = _boundaries1[previousId];
                     previousItem1.maxBoundary = () => item.Value.Item1;
                     _boundaries1[previousId] = previousItem1;
 
+                    previousItem2 = _boundaries2[previousId];
+                    previousItem2.rightNeighbour = item;
+                    _boundaries2[previousId] = previousItem2;
+
                 }
-                _boundaries.Add(item.Id, (minBoundary, 0, item));
                 previousId = item.Id;
-                minBoundary = item.Value.Item2;
+
+                //_boundaries.Add(item.Id, (minBoundary, 0, item));
+                //minBoundary = item.Value.Item2;
 
                 _boundaries1.Add(item.Id, (minBoundary1, default, item));
                 minBoundary1 = () => item.Value.Item2;
 
+                _boundaries2.Add(item.Id, (leftNeighbour, default, item));
+                leftNeighbour = item;
+
             }
-            previousItem = _boundaries[previousId];
-            previousItem.maxBoundary = Max;
-            _boundaries[previousId] = previousItem;
+            //previousItem = _boundaries[previousId];
+            //previousItem.maxBoundary = Max;
+            //_boundaries[previousId] = previousItem;
 
             previousItem1 = _boundaries1[previousId];
             previousItem1.maxBoundary = () => Max;
             _boundaries1[previousId] = previousItem1;
 
-            int i = 1;
-            foreach (var item in _boundaries)
-            {
-                Console.WriteLine($"Sorted range item {i} {item.Key} with set left: {item.Value.item.LeftValue} (no less than {item.Value.minBoundary}), right: {item.Value.item.RightValue} (no more than {item.Value.maxBoundary})");
-                i++;
-            }
+            previousItem2 = _boundaries2[previousId];
+            previousItem2.rightNeighbour = default;
+            _boundaries2[previousId] = previousItem2;
+
+            //int i = 1;
+            //foreach (var item in _boundaries1)
+            //{
+            //    Console.WriteLine($"Sorted range item {i} {item.Key} with set left: {item.Value.item.LeftValue} (no less than {item.Value.minBoundary}), right: {item.Value.item.RightValue} (no more than {item.Value.maxBoundary})");
+            //    i++;
+            //}
         }
 
         internal void RemoveRangeItem(RangeItem item) => _items.Remove(item);
@@ -371,6 +459,23 @@ namespace AntDesign
             else
             {
                 return $"width: {((Max - Min) / (VisibleMax - VisibleMin)) * 100}%";
+            }
+        }
+
+        private RangeItem _focusedItem;
+        internal void SetRangeItemFocus(RangeItem item, bool isFocused)
+        {
+            if (_focusedItem is not null)
+            {
+                _focusedItem.SetFocus(false);
+            }
+            if (isFocused)
+            {
+                _focusedItem = item;
+            }
+            else
+            {
+                _focusedItem = null;
             }
         }
 
