@@ -6,13 +6,13 @@ using System.Globalization;
 using Microsoft.AspNetCore.Components.Web;
 using System.Linq;
 using System;
+using OneOf.Types;
 
 namespace AntDesign
 {
     public partial class MultiRangeSlider : AntInputComponentBase<IEnumerable<(double, double)>>
     {
         private const string PreFixCls = "ant-multi-range-slider";
-        private bool _isInitialized = false;
         private bool _isAtfterFirstRender = false;
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
@@ -150,7 +150,7 @@ namespace AntDesign
                 }
             }
         }
-        
+
         protected IEnumerable<(double, double)> _values;
         private double _visibleMin;
         private double _visibleMax;
@@ -199,8 +199,7 @@ namespace AntDesign
         protected override void OnInitialized()
         {
             base.OnInitialized();
-            _trackWidth = GetRangeFullWidth();
-            _isInitialized = true;
+            _trackWidth = GetRangeFullWidth();            
         }
 
         protected override void OnParametersSet()
@@ -211,9 +210,6 @@ namespace AntDesign
 
             ClassMapper.Clear()
                 .Add(PreFixCls)
-                //.If($"{PreFixCls}-disabled", () => Disabled)
-                //.If($"{PreFixCls}-vertical", () => Vertical)
-                //.If($"{PreFixCls}-with-marks", () => Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
         }
 
@@ -240,8 +236,8 @@ namespace AntDesign
             base.OnAfterRender(firstRender);
             if (firstRender)
             {
-                SortRangeItems();
                 _isAtfterFirstRender = true;
+                SortRangeItems();
             }
         }
 
@@ -251,82 +247,52 @@ namespace AntDesign
         }
 
         private List<RangeItem> _items = new();
-//        private Dictionary<string, (double minBoundary, double maxBoundary, RangeItem item)> _boundaries;
-        private Dictionary<string, (Func<double> minBoundary, Func<double> maxBoundary, RangeItem item)> _boundaries1;
-        private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries2;
+        private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries;
 
         internal void AddRangeItem(RangeItem item)
         {
             _items.Add(item);
-            //Console.WriteLine($"Added range item {_items.Count} with set left: {item.LeftValue}, right: {item.RightValue}");
+            SortRangeItems();
         }
 
         internal double GetLeftBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandle)
         {
-            //_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false
             if (AllowOverlapping)
             {
-                if (_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false)
+                if (_boundaries?[id].item?.HasAttachedEdgeWithGap ?? false)
                 {
-                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
-                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
+                    GetPulledEdgesValues(id, out double currentItemPulledEdge, out double attachedItemPulledEdge);
                     if (attachedItemPulledEdge < currentItemPulledEdge)
                     {
                         return currentItemPulledEdge - attachedItemPulledEdge;
                     }
-                    else
-                    {
-                        return Min; // Math.Min(Min, Min - _boundaries2[id].item.GapDistance);
-                    }
                 }
-                else
-                {
-                    return Min;
-                }
+                return Min;
             }
 
-            if (_isAtfterFirstRender && _boundaries2[id].leftNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries[id].leftNeighbour != default)
             {
                 if (fromHandle == attachedHandle)
                 {
-                    if (_boundaries2[id].item.HasAttachedEdgeWithGap)
+                    if (_boundaries[id].item.HasAttachedEdgeWithGap)
                     {
-                        //looks like this never kicks in
-                        //if (attachedHandleNo == 2)
-                        //{
-                        //    return _boundaries2[id].item.LeftValue;
-                        //}
                         if (attachedHandle == RangeEdge.Left)
                         {
-                            return _boundaries2[id].leftNeighbour.LeftValue + _boundaries2[id].item.GapDistance;
+                            return _boundaries[id].leftNeighbour.LeftValue + _boundaries[id].item.GapDistance;
                         }
                     }
                     else
                     {
-                        if (attachedHandle == RangeEdge.Right)
+                        if (attachedHandle == RangeEdge.Left) //do not allow to exceed neighbor's edge
                         {
-                            return _boundaries2[id].item.LeftValue; //attached is right edge, cannot go beyond current left edge, because the right neighbor (that is attached) cannot exceed beyond current left 
-                        }
-                        else if (attachedHandle == RangeEdge.Left) //do not allow to exceed neighbor's edge
-                        {
-                            return _boundaries2[id].leftNeighbour.LeftValue;
+                            return _boundaries[id].leftNeighbour.LeftValue;
                         }
                     }
                 }
                 else
                 {
-                    if (attachedHandle == RangeEdge.Right)
-                    {
-                        return _boundaries2[id].leftNeighbour.RightValue;
-                    }
-                    else if (attachedHandle == RangeEdge.Left) //do not allow to exceed neighbor's edge
-                    {
-                        return _boundaries2[id].leftNeighbour.LeftValue;
-                    }
-                    else
-                    {
-                        return _boundaries2[id].leftNeighbour.RightValue;
-                    }
+                    //for single edge, all except the closes to the Min
+                    return _boundaries[id].leftNeighbour.RightValue;
                 }
             }
             return Min;
@@ -336,157 +302,137 @@ namespace AntDesign
         {
             if (AllowOverlapping)
             {
-                if (_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false)
+                if (_boundaries?[id].item?.HasAttachedEdgeWithGap ?? false)
                 {
-                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
-                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
+                    GetPulledEdgesValues(id, out double currentItemPulledEdge, out double attachedItemPulledEdge);
                     if (attachedItemPulledEdge > currentItemPulledEdge)
                     {
                         return Max - (attachedItemPulledEdge - currentItemPulledEdge);
                     }
-                    else
-                    {
-                        return Max; // Math.Min(Min, Min - _boundaries2[id].item.GapDistance);
-                    }
                 }
-                else
-                {
-                    return Max;
-                }
+                return Max;
             }
 
-            if (_isAtfterFirstRender && _boundaries2[id].rightNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries[id].rightNeighbour != default)
             {
                 if (fromHandle == attachedHandleNo)
                 {
-                    if (_boundaries2[id].item.HasAttachedEdgeWithGap)
+                    if (_boundaries[id].item.HasAttachedEdgeWithGap)
                     {
                         if (attachedHandleNo == RangeEdge.Left)
                         {
-                            return _boundaries2[id].item.RightValue;
+                            return _boundaries[id].item.RightValue;
                         }
                         if (attachedHandleNo == RangeEdge.Right)
                         {
-                            return _boundaries2[id].rightNeighbour.RightValue - _boundaries2[id].item.GapDistance; //in a gap situation, gap distance has to be accounted for
+                            return _boundaries[id].rightNeighbour.RightValue - _boundaries[id].item.GapDistance; //in a gap situation, gap distance has to be accounted for
                         }
                     }
                     else
                     {
                         if (attachedHandleNo == RangeEdge.Left)
                         {
-                            return _boundaries2[id].rightNeighbour.LeftValue;
-                        }
-                        if (attachedHandleNo == RangeEdge.Right)
-                        {
-                            return _boundaries2[id].rightNeighbour.RightValue;
+                            return _boundaries[id].rightNeighbour.LeftValue;
                         }
                     }
                 }
                 else
                 {
-                    if (attachedHandleNo == RangeEdge.Left)
-                    {
-                        return _boundaries2[id].item.RightValue;
-                    }
-                    if (attachedHandleNo == RangeEdge.Right) //attached edge is right, so right boundary 
-                    {
-                        return _boundaries2[id].item.RightValue;
-                    }
-                    else
-                    {
-                        return _boundaries2[id].rightNeighbour.LeftValue;
-                    }
+                    //for single edge, all except the closes to the Max
+                    return _boundaries[id].rightNeighbour.LeftValue; 
+
                 }
             }
             if (attachedHandleNo > 0) //because this is with attached, it's max is its own current Right
             {
-                return _boundaries2[id].item.RightValue;
+                return _boundaries[id].item.RightValue;
             }
             return Max;
         }
 
+        private void GetPulledEdgesValues(string id, out double currentItemPulledEdge, out double attachedItemPulledEdge)
+        {
+            var currentItem = _boundaries[id].item;
+            currentItemPulledEdge = GetPulledEdgeValue(currentItem);
+            attachedItemPulledEdge = GetPulledEdgeValue(currentItem.AttachedItem);
+        }
+
+        private static double GetPulledEdgeValue(RangeItem item)
+        {
+            if (item.AttachedHandleNo == RangeEdge.Left)
+            {
+                return item.LeftValue;
+            }
+            else
+            {
+                return item.RightValue;
+            }
+        }
         internal RangeItem GetRightNeighbour(string id)
         {
-            if (_isAtfterFirstRender && _boundaries2[id].rightNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries?[id].rightNeighbour != default)
             {
-                return _boundaries2[id].rightNeighbour;
+                return _boundaries[id].rightNeighbour;
             }
             return default;
         }
 
         internal RangeItem GetLeftNeighbour(string id)
         {
-            if (_isAtfterFirstRender && _boundaries2[id].leftNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries?[id].leftNeighbour != default)
             {
-                return _boundaries2[id].leftNeighbour;
+                return _boundaries[id].leftNeighbour;
             }
             return default;
         }
 
         internal void SortRangeItems()
         {
+            if (!_isAtfterFirstRender || _items.Count == 0)
+            {
+                return;
+            }
             //TODO: allow adding IComparer or use default
-            _items.Sort((s1, s2) => s1.Value.Item1.CompareTo(s2.Value.Item1));
-            //_boundaries = new();
-            _boundaries1 = new();
-            _boundaries2 = new();
-            //double minBoundary = Min;
-            Func<double> minBoundary1 = () => Min;
+            _items.Sort((s1, s2) =>
+                {
+                    var firstItemCompare = s1.Value.Item1.CompareTo(s2.Value.Item1);
+                    if (firstItemCompare == 0)
+                    {
+                        return s1.Value.Item2.CompareTo(s2.Value.Item2);
+                    }
+                    return firstItemCompare;
+                });
+
+            _boundaries = new();
             RangeItem leftNeighbour = default;
             string previousId = "";
-            //(double minBoundary, double maxBoundary, RangeItem item) previousItem;
-            (Func<double> minBoundary, Func<double> maxBoundary, RangeItem item) previousItem1;
-            (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item) previousItem2;
+            (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item) previousItem;
             foreach (var item in _items)
             {
                 if (previousId != string.Empty)
                 {
-                    //previousItem = _boundaries[previousId];
-                    //previousItem.maxBoundary = item.Value.Item1;
-                    //_boundaries[previousId] = previousItem;
-
-                    previousItem1 = _boundaries1[previousId];
-                    previousItem1.maxBoundary = () => item.Value.Item1;
-                    _boundaries1[previousId] = previousItem1;
-
-                    previousItem2 = _boundaries2[previousId];
-                    previousItem2.rightNeighbour = item;
-                    _boundaries2[previousId] = previousItem2;
+                    previousItem = _boundaries[previousId];
+                    previousItem.rightNeighbour = item;
+                    _boundaries[previousId] = previousItem;
 
                 }
                 previousId = item.Id;
 
-                //_boundaries.Add(item.Id, (minBoundary, 0, item));
-                //minBoundary = item.Value.Item2;
-
-                _boundaries1.Add(item.Id, (minBoundary1, default, item));
-                minBoundary1 = () => item.Value.Item2;
-
-                _boundaries2.Add(item.Id, (leftNeighbour, default, item));
+                _boundaries.Add(item.Id, (leftNeighbour, default, item));
                 leftNeighbour = item;
 
             }
-            //previousItem = _boundaries[previousId];
-            //previousItem.maxBoundary = Max;
-            //_boundaries[previousId] = previousItem;
 
-            previousItem1 = _boundaries1[previousId];
-            previousItem1.maxBoundary = () => Max;
-            _boundaries1[previousId] = previousItem1;
-
-            previousItem2 = _boundaries2[previousId];
-            previousItem2.rightNeighbour = default;
-            _boundaries2[previousId] = previousItem2;
-
-            //int i = 1;
-            //foreach (var item in _boundaries1)
-            //{
-            //    Console.WriteLine($"Sorted range item {i} {item.Key} with set left: {item.Value.item.LeftValue} (no less than {item.Value.minBoundary}), right: {item.Value.item.RightValue} (no more than {item.Value.maxBoundary})");
-            //    i++;
-            //}
+            previousItem = _boundaries[previousId];
+            previousItem.rightNeighbour = default;
+            _boundaries[previousId] = previousItem;
         }
 
-        internal void RemoveRangeItem(RangeItem item) => _items.Remove(item);
+        internal void RemoveRangeItem(RangeItem item)
+        {
+            _items.Remove(item);
+            SortRangeItems();
+        }
 
         internal double GetNearestStep(double value)
         {

@@ -10,7 +10,7 @@
         <Tooltip Title="@Parent.TipFormatter(_leftValue)" Style="display: inline;" Visible="_tooltipLeftVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLeft">
             <Unbound>
                 <div tabindex="0" 
-                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1 @_attachedLeftHandleClass" 
+                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1@_attachedLeftHandleClass" 
                      role="slider" 
                      aria-disabled="@Disabled.ToString()" 
                      aria-valuenow="30" 
@@ -26,7 +26,7 @@
         <Tooltip Title="@Parent.TipFormatter(_rightValue)" Style="display: inline;" Visible="_tooltipRightVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipRight">
             <Unbound>
                 <div tabindex="0" 
-                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2 @_attachedRightHandleClass" 
+                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2@_attachedRightHandleClass" 
                      role="slider" 
                      aria-disabled="@Disabled.ToString()" 
                      aria-valuenow="30" 
@@ -43,7 +43,7 @@
     else
     {
         <div tabindex="0" 
-             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1 @_attachedLeftHandleClass" 
+             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1@_attachedLeftHandleClass" 
              role="slider" 
              aria-disabled="@Disabled.ToString()" 
              aria-valuenow="30" 
@@ -55,7 +55,7 @@
              @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
         </div>
         <div tabindex="0" 
-             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2 @_attachedRightHandleClass" 
+             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2@_attachedRightHandleClass" 
              role="slider" 
              aria-disabled="@Disabled.ToString()" 
              aria-valuenow="30" 
@@ -71,8 +71,8 @@
 </div>
 
 @code {
-    RenderFragment _locked = @<Icon Type="lock" Theme="outline"/>;
-    RenderFragment _unlocked = @<Icon Type="unlock" Theme="outline"/>;
+    static RenderFragment _locked = @<Icon Type="lock" Theme="outline"/>;
+    static RenderFragment _unlocked = @<Icon Type="unlock" Theme="outline"/>;
 
     RenderFragment _rightHandleFill;
     RenderFragment _leftHandleFill;

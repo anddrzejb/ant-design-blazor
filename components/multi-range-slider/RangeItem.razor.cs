@@ -10,18 +10,11 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace AntDesign
 {
-    public enum RangeEdge
-    {
-        Left = 1,
-        Right = 2,
-    }
 
     public partial class RangeItem : AntInputComponentBase<(double, double)>
     {
-        private const string PreFixCls = "ant-multi-range-slider-item";
+        private const string PreFixCls = "ant-multi-range-slider";
         private HtmlElement _sliderDom;
-        private HtmlElement _leftHandleDom;
-        private HtmlElement _rightHandleDom;
         private ElementReference _leftHandle;
         private ElementReference _rightHandle;
         private string _leftHandleStyle = "left: 0%; right: auto; transform: translateX(-50%);";
@@ -186,67 +179,6 @@ namespace AntDesign
 
         public double Min => Parent.Min;
 
-        ///// <summary>
-        ///// dual thumb mode
-        ///// </summary>
-        ////[Parameter]
-        //private bool? _range;
-
-        //public bool Range
-        //{
-        //    get
-        //    {
-        //        if (_range == null)
-        //        {
-        //            Type type = typeof(TValue);
-        //            Type doubleType = typeof(double);
-        //            Type tupleDoubleType = typeof((double, double));
-        //            if (type == doubleType)
-        //            {
-        //                _range = false;
-        //            }
-        //            else if (type == tupleDoubleType)
-        //            {
-        //                _range = true;
-        //            }
-        //            else
-        //            {
-        //                throw new ArgumentOutOfRangeException($"Type argument of Slider should be one of {doubleType}, {tupleDoubleType}");
-        //            }
-        //        }
-        //        return _range.Value;
-        //    }
-        //    //private set { _range = value; }
-        //}
-
-        ///// <summary>
-        ///// The granularity the slider can step through values. Must greater than 0, and be divided by (<see cref="Max"/> - <see cref="Min"/>) . When <see cref="Marks"/> no null, <see cref="Step"/> can be null.
-        ///// </summary>
-        //private double? _step = 1;
-
-        //private int _precision;
-
-        //[Parameter]
-        //public double? Step
-        //{
-        //    get { return _step; }
-        //    set
-        //    {
-        //        _step = value;
-        //        //no need to evaluate if no tooltip
-        //        if (_step != null && _isTipFormatterDefault)
-        //        {
-        //            char separator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0];
-        //            string[] number = _step.ToString().Split(separator);
-        //            if (number.Length > 1)
-        //            {
-        //                _precision = number[1].Length;
-        //                _tipFormatter = (d) => string.Format(CultureInfo.CurrentCulture, "{0:N02}", Math.Round(d, _precision));
-        //            }
-        //        }
-        //    }
-        //}
-
         private double _leftValue = double.MinValue;
 
         internal double LeftValue
@@ -276,7 +208,6 @@ namespace AntDesign
                     SetStyle();
                     if (value != CurrentValue.Item1)
                         CurrentValue = (_leftValue, RightValue);
-                    Console.WriteLine($"Right - Id: {Id}, attached: {_hasAttachedEdge}, values:({LeftValue},{RightValue})");
                 }
             }
         }
@@ -289,7 +220,6 @@ namespace AntDesign
             get => _rightValue;
             set
             {
-                //Console.WriteLine($"RightValue change => clamp {value} based on LeftValue={LeftValue} and RightBoundary={Parent.GetRightBoundary(Id, _hasAttachedEdge)}");
                 double candidate;
                 if (!Slave)
                 {
@@ -310,11 +240,8 @@ namespace AntDesign
                 {
                     _rightValue = candidate;
                     SetStyle();
-                    //CurrentValue = TupleToGeneric((LeftValue, _rightValue));
-                    //(double, double) typedValue = DataConvertionExtensions.Convert<TValue, (double, double)>(CurrentValue);
                     if (value != CurrentValue.Item2)
                         CurrentValue = (LeftValue, _rightValue);
-                    Console.WriteLine($"Right - Id: {Id}, attached: {_hasAttachedEdge}, values:({LeftValue},{RightValue})");
                 }
             }
         }
@@ -347,30 +274,6 @@ namespace AntDesign
         [Parameter]
         public Action<(double, double)> OnChange { get; set; }
 
-        //[Parameter]
-        //public bool HasTooltip { get; set; } = true;
-
-        ///// <summary>
-        ///// Slider will pass its value to tipFormatter, and display its value in Tooltip
-        ///// </summary>
-        //private bool _isTipFormatterDefault = true;
-
-        //private Func<double, string> _tipFormatter = (d) => d.ToString(LocaleProvider.CurrentLocale.CurrentCulture);
-
-        //[Parameter]
-        //public Func<double, string> TipFormatter
-        //{
-        //    get { return _tipFormatter; }
-        //    set
-        //    {
-        //        _tipFormatter = value;
-        //        _isTipFormatterDefault = false;
-        //    }
-        //}
-
-        /// <summary>
-        /// Set Tooltip display position. Ref Tooltip
-        /// </summary>
         [Parameter]
         public Placement TooltipPlacement { get; set; }
 
@@ -453,7 +356,7 @@ namespace AntDesign
             base.OnParametersSet();
 
             ClassMapper.Clear()
-                .Add(PreFixCls)
+                .Add($"{PreFixCls}-item")
                 .If($"{PreFixCls}-disabled", () => Disabled)
                 .If($"{PreFixCls}-vertical", () => Parent.Vertical)
                 .If($"{PreFixCls}-with-marks", () => Parent.Marks != null)
@@ -494,26 +397,6 @@ namespace AntDesign
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        //private async void OnMouseDown(MouseEventArgs args)
-        //{
-        //    //// _sliderDom = await JsInvokeAsync<DomRect>(JSInteropConstants.GetBoundingClientRect, _slider);
-        //    //_sliderDom = await JsInvokeAsync<Element>(JSInteropConstants.GetDomInfo, _slider);
-        //    //decimal x = (decimal)args.ClientX;
-        //    //decimal y = (decimal)args.ClientY;
-
-        //    //_mouseDown = !Disabled
-        //    //    && _sliderDom.clientLeft <= x && x <= _sliderDom.clientLeft + _sliderDom.clientWidth
-        //    //    && _sliderDom.clientTop <= y && y <= _sliderDom.clientTop + _sliderDom.clientHeight;
-
-        //    //_mouseDown = !Disabled;
-        //    //TODO: check how it behaves when range item is disabled
-        //    //if (HasAttachedEdgeWithGap && !Master)
-        //    //{
-        //    //    Master = true;
-        //    //    AttachedItem.Slave = true;
-        //    //}
-        //}
-
         private void OnRangeItemClick(MouseEventArgs args)
         {
             if (!_isFocused)
@@ -528,15 +411,27 @@ namespace AntDesign
             _isFocused = isFocused;
             if (_isFocused)
             {
-                _focusClass = "ant-multi-range-slider-track-focus";
-                _leftFocusZIndex = "z-index: 1000;"; //just below default overlay zindex
-                _rightFocusZIndex = "z-index: 1000;";
+                _focusClass = $"{PreFixCls}-track-focus";
+                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
+                {
+                    _leftFocusZIndex = "z-index: 1000;"; //just below default overlay zindex
+                }
+                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
+                {
+                    _rightFocusZIndex = "z-index: 1000;";
+                }
             }
             else
             {
                 _focusClass = "";
-                _leftFocusZIndex = "z-index: 900;";
-                _rightFocusZIndex = "z-index: 900;";
+                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
+                {
+                    _leftFocusZIndex = "z-index: 900;";
+                }
+                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
+                {
+                    _rightFocusZIndex = "z-index: 900;";
+                }
             }
         }
 
@@ -600,7 +495,7 @@ namespace AntDesign
             {
                 Parent.ItemRequestingAttach = this;
                 HandleNoRequestingAttaching = handle;
-                ApplyLockEdgeStyle(handle);
+                SetLockEdgeStyle(handle);
                 return true;
             }
             return false;
@@ -631,9 +526,7 @@ namespace AntDesign
                     ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue + GapDistance;
                     AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue - GapDistance;
                 }
-
-                AttachedItem.GapDistance = GapDistance;
-                Parent.ItemRequestingAttach.ApplyLockEdgeStyle(GetOppositeEdge(handle), true, true);
+                Parent.ItemRequestingAttach.SetLockEdgeStyle(GetOppositeEdge(handle), true, true);
             }
             else
             {
@@ -649,10 +542,10 @@ namespace AntDesign
                     ChangeAttachedItem = () => AttachedItem.RightValue = this.RightValue + GapDistance;
                     AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.RightValue - GapDistance;
                 }
-                AttachedItem.GapDistance = GapDistance;
-                Parent.ItemRequestingAttach.ApplyLockEdgeStyle(handle, true, true);
+                Parent.ItemRequestingAttach.SetLockEdgeStyle(handle, true, true);
             }
-            ApplyLockEdgeStyle(handle, true);
+            AttachedItem.GapDistance = GapDistance;
+            SetLockEdgeStyle(handle, true);
         }
 
         private bool AreEdgesNeighbours(RangeEdge handle)
@@ -668,20 +561,19 @@ namespace AntDesign
                 return false;
             }
 
-
             return IsLeftNeighbor(handle)
                 || IsRightNeighbor(handle);
         }
 
         private bool IsRightNeighbor(RangeEdge handle)
         {
-            return handle == RangeEdge.Right 
+            return handle == RangeEdge.Right
                 && Parent.ItemRequestingAttach.Id == Parent.GetRightNeighbour(Id).Id;
         }
 
         private bool IsLeftNeighbor(RangeEdge handle)
         {
-            return handle == RangeEdge.Left 
+            return handle == RangeEdge.Left
                 && Parent.ItemRequestingAttach.Id == Parent.GetLeftNeighbour(Id).Id;
         }
 
@@ -728,7 +620,7 @@ namespace AntDesign
             {
                 ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue;
             }
-            ApplyLockEdgeStyle(handle, true);
+            SetLockEdgeStyle(handle, true);
         }
 
         private static RangeEdge GetOppositeEdge(RangeEdge edge)
@@ -740,41 +632,35 @@ namespace AntDesign
             return RangeEdge.Left;
         }
 
-        private void ApplyLockEdgeStyle(RangeEdge handle, bool locked = false, bool requestStateChange = false)
+        private void SetLockEdgeStyle(RangeEdge handle, bool locked = false, bool requestStateChange = false)
         {
             if (handle == RangeEdge.Left)
             {
-                if (locked)
-                {
-                    _attachedLeftHandleClass = "ant-multi-range-slider-handle-lock ant-multi-range-slider-handle-lock-closed";
-                    _leftHandleFill = _locked;
-                }
-                else
-                {
-                    _attachedLeftHandleClass = "ant-multi-range-slider-handle-lock ant-multi-range-slider-handle-lock-open";
-                    _leftHandleFill = _unlocked;
-                }
-                _leftFocusZIndex = "z-index: 1010;";
-
+                ApplyLockEdgeStyle(locked, ref _attachedLeftHandleClass, ref _leftHandleFill, ref _leftFocusZIndex);
             }
             else
             {
-                if (locked)
-                {
-                    _attachedRightHandleClass = "ant-multi-range-slider-handle-lock ant-multi-range-slider-handle-lock-closed";
-                    _rightHandleFill = _locked;
-                }
-                else
-                {
-                    _attachedRightHandleClass = "ant-multi-range-slider-handle-lock ant-multi-range-slider-handle-lock-open";
-                    _rightHandleFill = _unlocked;
-                }
-                _rightFocusZIndex = "z-index: 1010;";
+                ApplyLockEdgeStyle(locked, ref _attachedRightHandleClass, ref _rightHandleFill, ref _rightFocusZIndex);
             }
             if (requestStateChange)
             {
                 StateHasChanged();
             }
+        }
+
+        private static void ApplyLockEdgeStyle(bool locked, ref string attachHandleClass, ref RenderFragment handleFill, ref string focusIndex)
+        {
+            if (locked)
+            {
+                attachHandleClass = $" {PreFixCls}-handle-lock {PreFixCls}-handle-lock-closed";
+                handleFill = _locked;
+            }
+            else
+            {
+                attachHandleClass = $" {PreFixCls}-handle-lock {PreFixCls}-handle-lock-open";
+                handleFill = _unlocked;
+            }
+            focusIndex = "z-index: 1010;";
         }
 
         internal void ResetLockEdgeStyle(bool requestStateChange)
@@ -798,35 +684,14 @@ namespace AntDesign
             //reset all attached
             if (HasAttachedEdgeWithGap || forceReset)
             {
-                if (Parent.ItemRequestingAttach is not null)
-                {
-                    Parent.ItemRequestingAttach.ResetLockEdgeStyle(Parent.ItemRequestingAttach.Id != Id);
-                    Parent.ItemRequestingAttach.ChangeAttachedItem = default;
-                    Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
-                    Parent.ItemRequestingAttach.AttachedHandleNo = 0;
-                    Parent.ItemRequestingAttach.AttachedItem = null;
-                    Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
-                    Parent.ItemRequestingAttach.GapDistance = 0;
-                    Parent.ItemRequestingAttach.Master = false;
-                    Parent.ItemRequestingAttach.Slave = false;
-                    Parent.ItemRequestingAttach.AttachedItem = null;
-                    Parent.ItemRequestingAttach = null;
-                }
-                if (Parent.ItemRespondingToAttach is not null)
-                {
-                    Parent.ItemRespondingToAttach.ResetLockEdgeStyle(Parent.ItemRespondingToAttach.Id != Id);
-                    Parent.ItemRespondingToAttach.ChangeAttachedItem = default;
-                    Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
-                    Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
-                    Parent.ItemRespondingToAttach.AttachedItem = null;
-                    Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
-                    Parent.ItemRespondingToAttach.GapDistance = 0;
-                    Parent.ItemRespondingToAttach.Master = false;
-                    Parent.ItemRespondingToAttach.Slave = false;
-                    Parent.ItemRespondingToAttach.AttachedItem = null;
-                    Parent.ItemRespondingToAttach = null;
-
-                }
+                ResetNotOverlapping(Parent.ItemRequestingAttach, Id);
+                Parent.ItemRequestingAttach = null;
+                ResetNotOverlapping(Parent.ItemRespondingToAttach, Id);
+                Parent.ItemRespondingToAttach = null;
+                //resort, because order could have been altered
+                //and proper order is needed to pick-up attaching on 
+                //overlapping edges
+                Parent.SortRangeItems();
             }
             else
             {
@@ -842,7 +707,23 @@ namespace AntDesign
             }
             SetFocus(_isFocused);
             HasAttachedEdgeWithGap = false;
-            //Console.WriteLine($"OnDoubleClick {Id}, handle {handle}, attached: reset");
+        }
+
+        private static void ResetNotOverlapping(RangeItem item, string currentRangeId)
+        {
+            if (item is not null)
+            {
+                item.ResetLockEdgeStyle(item.Id != currentRangeId);
+                item.ChangeAttachedItem = default;
+                item.HandleNoRequestingAttaching = 0;
+                item.AttachedHandleNo = 0;
+                item.AttachedItem = null;
+                item.HasAttachedEdgeWithGap = false;
+                item.GapDistance = 0;
+                item.Master = false;
+                item.Slave = false;
+                item.AttachedItem = null;
+            }
         }
 
         private double _trackedClientX;
@@ -852,6 +733,7 @@ namespace AntDesign
         {
             _mouseDown = !Disabled;
             SetFocus(true);
+            Parent.SetRangeItemFocus(this, true);
             _right = right;
             _initialLeftValue = _leftValue;
             _initialRightValue = _rightValue;
@@ -934,122 +816,102 @@ namespace AntDesign
             _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
             double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
             double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
-            double handleNewPosition;
             if (_right)
             {
-                if (_rightHandleDom == null)
-                {
-                    _rightHandleDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, _rightHandle);
-                }
-                if (Parent.Reverse)
-                {
-                    if (Parent.Vertical)
-                    {
-                        handleNewPosition = clickClient - sliderOffset;
-                    }
-                    else
-                    {
-                        handleNewPosition = sliderLength - (clickClient - sliderOffset);
-                    }
-                }
-                else
-                {
-                    if (Parent.Vertical)
-                    {
-                        handleNewPosition = sliderOffset + sliderLength - clickClient;
-                    }
-                    else
-                    {
-                        handleNewPosition = clickClient - sliderOffset;
-                    }
-                }
+                await ProcessNewRightValue(clickClient, sliderOffset, sliderLength);
+            }
+            else
+            {
+                await ProcessNewLeftValue(clickClient, sliderOffset, sliderLength);
+            }
+            ChangeAttachedItem?.Invoke();
+        }
 
-                double rightV = (Parent.MinMaxDelta * handleNewPosition / sliderLength) + Min;
-                if (rightV < LeftValue)
-                {
-                    if (Parent.AllowOverlapping && _hasAttachedEdge) //push
-                    {
-                        RightValue = rightV;
-                        LeftValue = rightV;
-                    }
-                    else if (!_hasAttachedEdge) //do not allow switching if locked with another range item
-                    {
-                        _right = false;
-                        if (_mouseDown)
-                            RightValue = _initialLeftValue;
-                        LeftValue = rightV;
-                        await FocusAsync(_leftHandle);
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
+        private async Task ProcessNewRightValue(double clickClient, double sliderOffset, double sliderLength)
+        {
+            double rightV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
+            if (rightV < LeftValue)
+            {
+                if (Parent.AllowOverlapping && _hasAttachedEdge) //push
                 {
                     RightValue = rightV;
+                    LeftValue = rightV;
+                }
+                else if (!_hasAttachedEdge) //do not allow switching if locked with another range item
+                {
+                    _right = false;
+                    if (_mouseDown)
+                        RightValue = _initialLeftValue;
+                    LeftValue = rightV;
+                    await FocusAsync(_leftHandle);
+                }
+                else
+                {
+                    return;
                 }
             }
             else
             {
-                if (_leftHandleDom == null)
-                {
-                    _leftHandleDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, _leftHandle);
-                }
-                if (_rightHandleDom == null)
-                {
-                    _rightHandleDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, _rightHandle);
-                }
-                if (Parent.Reverse)
-                {
-                    if (Parent.Vertical)
-                    {
-                        handleNewPosition = clickClient - sliderOffset;
-                    }
-                    else
-                    {
-                        handleNewPosition = sliderLength - (clickClient - sliderOffset);
-                    }
-                }
-                else
-                {
-                    if (Parent.Vertical)
-                    {
-                        handleNewPosition = sliderOffset + sliderLength - clickClient;
-                    }
-                    else
-                    {
-                        handleNewPosition = clickClient - sliderOffset;
-                    }
-                }
+                RightValue = rightV;
+            }
+        }
 
-                double leftV = (Parent.MinMaxDelta * handleNewPosition / sliderLength) + Min;
-                if (leftV > RightValue)
+        private async Task ProcessNewLeftValue(double clickClient, double sliderOffset, double sliderLength)
+        {
+            double leftV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
+            if (leftV > RightValue)
+            {
+                if (Parent.AllowOverlapping && _hasAttachedEdge) //push
                 {
-                    if (Parent.AllowOverlapping && _hasAttachedEdge) //push
-                    {
-                        RightValue = leftV;
-                        LeftValue = leftV;
-                    }
-                    else if (!_hasAttachedEdge) //do not allow switching if locked with another range item
-                    {
-                        _right = true;
-                        if (_mouseDown)
-                            LeftValue = _initialRightValue;
-                        RightValue = leftV;
-                        await FocusAsync(_rightHandle);
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
+                    RightValue = leftV;
                     LeftValue = leftV;
                 }
+                else if (!_hasAttachedEdge) //do not allow switching if locked with another range item
+                {
+                    _right = true;
+                    if (_mouseDown)
+                        LeftValue = _initialRightValue;
+                    RightValue = leftV;
+                    await FocusAsync(_rightHandle);
+                }
+                else
+                {
+                    return;
+                }
             }
-            ChangeAttachedItem?.Invoke();
+            else
+            {
+                LeftValue = leftV;
+            }
+        }
+
+        private double CalculateNewHandleValue(double clickClient, double sliderOffset, double sliderLength)
+        {
+            double handleNewPosition;
+            if (Parent.Reverse)
+            {
+                if (Parent.Vertical)
+                {
+                    handleNewPosition = clickClient - sliderOffset;
+                }
+                else
+                {
+                    handleNewPosition = sliderLength - (clickClient - sliderOffset);
+                }
+            }
+            else
+            {
+                if (Parent.Vertical)
+                {
+                    handleNewPosition = sliderOffset + sliderLength - clickClient;
+                }
+                else
+                {
+                    handleNewPosition = clickClient - sliderOffset;
+                }
+            }
+
+            return (Parent.MinMaxDelta * handleNewPosition / sliderLength) + Min;
         }
 
         internal void SetStyle()
