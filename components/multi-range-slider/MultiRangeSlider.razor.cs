@@ -264,13 +264,28 @@ namespace AntDesign
             {
                 if (fromHandle == attachedHandleNo)
                 {
-                    if (attachedHandleNo == 2)
+                    if (_boundaries2[id].item.HasAttachedEdgeWithGap)
                     {
-                        return _boundaries2[id].item.LeftValue; //attached is right edge, cannot go beyond current left edge, because the right neighbor (that is attached) cannot exceed beyond current left 
+                        //looks like this never kicks in
+                        //if (attachedHandleNo == 2)
+                        //{
+                        //    return _boundaries2[id].item.LeftValue;
+                        //}
+                        if (attachedHandleNo == 1)
+                        {
+                            return _boundaries2[id].leftNeighbour.LeftValue + _boundaries2[id].item.GapDistance;
+                        }
                     }
-                    else if (attachedHandleNo == 1) //do not allow to exceed neighbor's edge
+                    else
                     {
-                        return _boundaries2[id].leftNeighbour.LeftValue;
+                        if (attachedHandleNo == 2)
+                        {
+                            return _boundaries2[id].item.LeftValue; //attached is right edge, cannot go beyond current left edge, because the right neighbor (that is attached) cannot exceed beyond current left 
+                        }
+                        else if (attachedHandleNo == 1) //do not allow to exceed neighbor's edge
+                        {
+                            return _boundaries2[id].leftNeighbour.LeftValue;
+                        }
                     }
                 }
                 else
@@ -298,13 +313,27 @@ namespace AntDesign
             {
                 if (fromHandle == attachedHandleNo)
                 {
-                    if (attachedHandleNo == 1)
+                    if (_boundaries2[id].item.HasAttachedEdgeWithGap)
                     {
-                        return _boundaries2[id].rightNeighbour.LeftValue;
+                        if (attachedHandleNo == 1)
+                        {
+                            return _boundaries2[id].item.RightValue;
+                        }
+                        if (attachedHandleNo == 2)
+                        {
+                            return _boundaries2[id].rightNeighbour.RightValue - _boundaries2[id].item.GapDistance; //in a gap situation, gap distance has to be accounted for
+                        }
                     }
-                    if (attachedHandleNo == 2)
+                    else
                     {
-                        return _boundaries2[id].rightNeighbour.RightValue;
+                        if (attachedHandleNo == 1)
+                        {
+                            return _boundaries2[id].rightNeighbour.LeftValue;
+                        }
+                        if (attachedHandleNo == 2)
+                        {
+                            return _boundaries2[id].rightNeighbour.RightValue;
+                        }
                     }
                 }
                 else

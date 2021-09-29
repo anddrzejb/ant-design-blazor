@@ -38,13 +38,23 @@ namespace AntDesign
         private Tooltip _toolTipLeft;
 
         private bool _hasAttachedEdge;
-        internal bool HasAttachedEdgeWithGap { get; set; }
+        internal bool HasAttachedEdgeWithGap
+        {
+            get => _hasAttachedEdgeWithGap;
+            set
+            {
+                _hasAttachedEdgeWithGap = value;
+                _hasAttachedEdge = value;
+
+            }
+        }
         internal int AttachedHandleNo { get; set; }
         internal int HandleNoRequestingAttaching { get; set; }
         private string _attachedLeftHandleClass = "";
         private string _attachedRightHandleClass = "";
         internal RangeItem AttachedItem { get; set; }
         internal Action ChangeAttachedItem { get; set; }
+        internal double GapDistance { get; private set; }
         internal bool Master { get; set; }
         internal bool Slave { get; set; }
 
@@ -501,7 +511,7 @@ namespace AntDesign
             {
                 _focusClass = "ant-multi-range-slider-track-focus";
                 _leftFocusZIndex = "z-index: 1000;"; //just below default overlay zindex
-                _rightFocusZIndex = "z-index: 1000;"; 
+                _rightFocusZIndex = "z-index: 1000;";
             }
             else
             {
@@ -573,20 +583,20 @@ namespace AntDesign
                             Parent.ItemRequestingAttach.AttachedHandleNo = Parent.ItemRequestingAttach.HandleNoRequestingAttaching;
                             AttachedHandleNo = handleNo;
                             AttachedItem = Parent.ItemRequestingAttach;
-                            double distance;
                             Parent.ItemRequestingAttach.AttachedItem = this;
                             if (handleNo == 1)
                             {
-                                distance = this.LeftValue - AttachedItem.RightValue;
-                                ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue - distance;
-                                AttachedItem.ChangeAttachedItem = () => this.LeftValue = AttachedItem.RightValue + distance;
+                                GapDistance = this.LeftValue - AttachedItem.RightValue;
+                                ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue - GapDistance;
+                                AttachedItem.ChangeAttachedItem = () => this.LeftValue = AttachedItem.RightValue + GapDistance;
                             }
                             else
                             {
-                                distance = AttachedItem.LeftValue - this.RightValue;
-                                ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue + distance;
-                                AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue - distance;
+                                GapDistance = AttachedItem.LeftValue - this.RightValue;
+                                ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue + GapDistance;
+                                AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue - GapDistance;
                             }
+                            AttachedItem.GapDistance = GapDistance;
                             ApplyLockEdgeStyle(handleNo, true);
                             Parent.ItemRequestingAttach.ApplyLockEdgeStyle(handleNo == 1 ? 2 : 1, true, true);
                             Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, separated, matching");
@@ -600,6 +610,7 @@ namespace AntDesign
                             Parent.ItemRequestingAttach.AttachedHandleNo = 0;
                             Parent.ItemRequestingAttach.AttachedItem = null;
                             Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
+                            Parent.ItemRequestingAttach.GapDistance = 0;
                             Parent.ItemRequestingAttach.Slave = false;
                             Parent.ItemRequestingAttach.Master = false;
                             Parent.ItemRequestingAttach = null;
@@ -612,6 +623,7 @@ namespace AntDesign
                                 Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
                                 Parent.ItemRespondingToAttach.AttachedItem = null;
                                 Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
+                                Parent.ItemRespondingToAttach.GapDistance = 0;
                                 Parent.ItemRespondingToAttach.Slave = false;
                                 Parent.ItemRespondingToAttach.Master = false;
                                 Parent.ItemRespondingToAttach = null;
@@ -699,6 +711,7 @@ namespace AntDesign
                 Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
                 Parent.ItemRequestingAttach.AttachedHandleNo = 0;
                 Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
+                Parent.ItemRequestingAttach.GapDistance = 0;
                 Parent.ItemRequestingAttach.Master = false;
                 Parent.ItemRequestingAttach.Slave = false;
                 Parent.ItemRequestingAttach.AttachedItem = null;
@@ -711,6 +724,7 @@ namespace AntDesign
                 Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
                 Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
                 Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
+                Parent.ItemRespondingToAttach.GapDistance = 0;
                 Parent.ItemRespondingToAttach.Master = false;
                 Parent.ItemRespondingToAttach.Slave = false;
                 Parent.ItemRespondingToAttach.AttachedItem = null;
@@ -954,6 +968,7 @@ namespace AntDesign
 
         private (double, double) _value;
         private MultiRangeSlider _parent;
+        private bool _hasAttachedEdgeWithGap;
 
         /// <summary>
         /// Gets or sets the value of the input. This should be used with two-way binding.
