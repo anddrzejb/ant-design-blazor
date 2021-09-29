@@ -10,7 +10,7 @@
         <Tooltip Title="@Parent.TipFormatter(_leftValue)" Style="display: inline;" Visible="_tooltipLeftVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLeft">
             <Unbound>
                 <div tabindex="0" 
-                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1" 
+                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1 @_attachedLeftHandleClass" 
                      role="slider" 
                      aria-disabled="@Disabled.ToString()" 
                      aria-valuenow="30" 
@@ -19,14 +19,14 @@
                      style="@(_leftHandleStyle+_focusZIndex)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, false)"
-                     @ondblclick="e => OnDoubleClick(1)">
+                     @ondblclick="e => OnDoubleClick(1)">@_leftHandleFill
                 </div>
             </Unbound>
         </Tooltip>
         <Tooltip Title="@Parent.TipFormatter(_rightValue)" Style="display: inline;" Visible="_tooltipRightVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipRight">
             <Unbound>
                 <div tabindex="0" 
-                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2" 
+                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2 @_attachedRightHandleClass" 
                      role="slider" 
                      aria-disabled="@Disabled.ToString()" 
                      aria-valuenow="30" 
@@ -35,7 +35,7 @@
                      style="@(_rightHandleStyle+_focusZIndex)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, true)"
-                     @ondblclick="e => OnDoubleClick(2)">
+                     @ondblclick="e => OnDoubleClick(2)">@_rightHandleFill
                 </div>
             </Unbound>
         </Tooltip>
@@ -43,7 +43,7 @@
     else
     {
         <div tabindex="0" 
-             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1" 
+             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1 @_attachedLeftHandleClass" 
              role="slider" 
              aria-disabled="@Disabled.ToString()" 
              aria-valuenow="30" 
@@ -52,10 +52,10 @@
              style="@(_leftHandleStyle+_focusZIndex)" 
              @ref="_leftHandle" 
              @onmousedown="e => OnMouseDownEdge(e, false)"
-             @ondblclick="e => OnDoubleClick(1)">
+             @ondblclick="e => OnDoubleClick(1)">@_leftHandleFill
         </div>
         <div tabindex="0" 
-             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2" 
+             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2 @_attachedRightHandleClass" 
              role="slider" 
              aria-disabled="@Disabled.ToString()" 
              aria-valuenow="30" 
@@ -64,9 +64,16 @@
              style="@(_rightHandleStyle+_focusZIndex)" 
              @ref="_rightHandle" 
              @onmousedown="(e) => OnMouseDownEdge(e, true)"
-             @ondblclick="e => OnDoubleClick(1)">
+             @ondblclick="e => OnDoubleClick(1)">@_rightHandleFill
         </div>
     }
 
 </div>
 
+@code {
+    RenderFragment _locked = @<Icon Type="lock" Theme="outline"/>;
+    RenderFragment _unlocked = @<Icon Type="unlock" Theme="outline"/>;
+
+    RenderFragment _rightHandleFill;
+    RenderFragment _leftHandleFill;
+}

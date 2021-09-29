@@ -14,6 +14,8 @@ namespace AntDesign
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isInitialized = false;
         private bool _isAtfterFirstRender = false;
+        internal RangeItem ItemRequestingAttach { get; set; }
+        internal RangeItem ItemRespondingToAttach { get; set; }
 
         /// <summary>
         /// If true, the slider will be vertical.
