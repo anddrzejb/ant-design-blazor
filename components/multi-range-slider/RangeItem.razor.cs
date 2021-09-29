@@ -26,7 +26,8 @@ namespace AntDesign
         private string _trackStyle = "left: 0%; width: 0%; right: auto;";
         private bool _isFocused;
         private string _focusClass = "";
-        private string _focusZIndex = "z-index: auto;";
+        private string _leftFocusZIndex = "z-index: auto;";
+        private string _rightFocusZIndex = "z-index: auto;";
         private bool _mouseDown;
         private bool _mouseMove;
         private bool _right = true;
@@ -43,7 +44,7 @@ namespace AntDesign
         private string _attachedLeftHandleClass = "";
         private string _attachedRightHandleClass = "";
         internal RangeItem AttachedItem { get; set; }
-        private Action _changeAttachedItem;
+        internal Action ChangeAttachedItem { get; set; }
         internal bool Master { get; set; }
         internal bool Slave { get; set; }
 
@@ -464,24 +465,25 @@ namespace AntDesign
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private async void OnMouseDown(MouseEventArgs args)
-        {
-            //// _sliderDom = await JsInvokeAsync<DomRect>(JSInteropConstants.GetBoundingClientRect, _slider);
-            //_sliderDom = await JsInvokeAsync<Element>(JSInteropConstants.GetDomInfo, _slider);
-            //decimal x = (decimal)args.ClientX;
-            //decimal y = (decimal)args.ClientY;
+        //private async void OnMouseDown(MouseEventArgs args)
+        //{
+        //    //// _sliderDom = await JsInvokeAsync<DomRect>(JSInteropConstants.GetBoundingClientRect, _slider);
+        //    //_sliderDom = await JsInvokeAsync<Element>(JSInteropConstants.GetDomInfo, _slider);
+        //    //decimal x = (decimal)args.ClientX;
+        //    //decimal y = (decimal)args.ClientY;
 
-            //_mouseDown = !Disabled
-            //    && _sliderDom.clientLeft <= x && x <= _sliderDom.clientLeft + _sliderDom.clientWidth
-            //    && _sliderDom.clientTop <= y && y <= _sliderDom.clientTop + _sliderDom.clientHeight;
+        //    //_mouseDown = !Disabled
+        //    //    && _sliderDom.clientLeft <= x && x <= _sliderDom.clientLeft + _sliderDom.clientWidth
+        //    //    && _sliderDom.clientTop <= y && y <= _sliderDom.clientTop + _sliderDom.clientHeight;
 
-            _mouseDown = !Disabled;
-            //TODO: check how it behaves when range item is disabled
-            if (HasAttachedEdgeWithGap)
-            {
-
-            }
-        }
+        //    //_mouseDown = !Disabled;
+        //    //TODO: check how it behaves when range item is disabled
+        //    //if (HasAttachedEdgeWithGap && !Master)
+        //    //{
+        //    //    Master = true;
+        //    //    AttachedItem.Slave = true;
+        //    //}
+        //}
 
         private void OnRangeItemClick(MouseEventArgs args)
         {
@@ -498,12 +500,14 @@ namespace AntDesign
             if (_isFocused)
             {
                 _focusClass = "ant-multi-range-slider-track-focus";
-                _focusZIndex = "z-index: 1000;"; //just below default overlay zindex
+                _leftFocusZIndex = "z-index: 1000;"; //just below default overlay zindex
+                _rightFocusZIndex = "z-index: 1000;"; 
             }
             else
             {
                 _focusClass = "";
-                _focusZIndex = "z-index: auto;";
+                _leftFocusZIndex = "z-index: auto;";
+                _rightFocusZIndex = "z-index: auto;";
             }
             //Console.WriteLine($"SetFocus {Id}, {_focusClass}");
         }
@@ -530,11 +534,11 @@ namespace AntDesign
                     AttachedItem.Slave = true;
                     if (handleNo == 1)
                     {
-                        _changeAttachedItem = () => AttachedItem.RightValue = this.LeftValue;
+                        ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue;
                     }
                     else
                     {
-                        _changeAttachedItem = () => AttachedItem.LeftValue = this.RightValue;
+                        ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue;
                     }
                     ApplyLockEdgeStyle(handleNo, true);
                     Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, attached: {AttachedItem.LeftValue}-{AttachedItem.RightValue}");
@@ -569,8 +573,20 @@ namespace AntDesign
                             Parent.ItemRequestingAttach.AttachedHandleNo = Parent.ItemRequestingAttach.HandleNoRequestingAttaching;
                             AttachedHandleNo = handleNo;
                             AttachedItem = Parent.ItemRequestingAttach;
-
+                            double distance;
                             Parent.ItemRequestingAttach.AttachedItem = this;
+                            if (handleNo == 1)
+                            {
+                                distance = this.LeftValue - AttachedItem.RightValue;
+                                ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue - distance;
+                                AttachedItem.ChangeAttachedItem = () => this.LeftValue = AttachedItem.RightValue + distance;
+                            }
+                            else
+                            {
+                                distance = AttachedItem.LeftValue - this.RightValue;
+                                ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue + distance;
+                                AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue - distance;
+                            }
                             ApplyLockEdgeStyle(handleNo, true);
                             Parent.ItemRequestingAttach.ApplyLockEdgeStyle(handleNo == 1 ? 2 : 1, true, true);
                             Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, separated, matching");
@@ -579,6 +595,7 @@ namespace AntDesign
                         {
                             //TODO: move or optimize
                             Parent.ItemRequestingAttach.ResetLockEdgeStyle(Parent.ItemRequestingAttach.Id != Id);
+                            Parent.ItemRequestingAttach.ChangeAttachedItem = default;
                             Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
                             Parent.ItemRequestingAttach.AttachedHandleNo = 0;
                             Parent.ItemRequestingAttach.AttachedItem = null;
@@ -590,6 +607,7 @@ namespace AntDesign
                             if (Parent.ItemRespondingToAttach is not null)
                             {
                                 Parent.ItemRespondingToAttach.ResetLockEdgeStyle(Parent.ItemRespondingToAttach.Id != Id);
+                                Parent.ItemRespondingToAttach.ChangeAttachedItem = default;
                                 Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
                                 Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
                                 Parent.ItemRespondingToAttach.AttachedItem = null;
@@ -623,6 +641,7 @@ namespace AntDesign
                     _attachedLeftHandleClass = "ant-multi-range-slider-handle-lock ant-multi-range-slider-handle-lock-open";
                     _leftHandleFill = _unlocked;
                 }
+                _leftFocusZIndex = "z-index: 1010;";
 
             }
             else
@@ -637,6 +656,7 @@ namespace AntDesign
                     _attachedRightHandleClass = "ant-multi-range-slider-handle-lock ant-multi-range-slider-handle-lock-open";
                     _rightHandleFill = _unlocked;
                 }
+                _rightFocusZIndex = "z-index: 1010;";
             }
             if (requestStateChange)
             {
@@ -664,16 +684,18 @@ namespace AntDesign
                 AttachedItem.Slave = false;
             }
             ResetLockEdgeStyle(false);
+            SetFocus(_isFocused);
             //_attachedItem.ResetLockEdgeStyle(true);
             Master = false;
             AttachedItem = default;
             _hasAttachedEdge = false;
             HasAttachedEdgeWithGap = false;
-            _changeAttachedItem = default;
+            ChangeAttachedItem = default;
             AttachedHandleNo = 0;
             if (Parent.ItemRequestingAttach is not null)
             {
                 Parent.ItemRequestingAttach.ResetLockEdgeStyle(Parent.ItemRequestingAttach.Id != Id);
+                Parent.ItemRequestingAttach.ChangeAttachedItem = default;
                 Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
                 Parent.ItemRequestingAttach.AttachedHandleNo = 0;
                 Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
@@ -685,6 +707,7 @@ namespace AntDesign
             if (Parent.ItemRespondingToAttach is not null)
             {
                 Parent.ItemRespondingToAttach.ResetLockEdgeStyle(Parent.ItemRespondingToAttach.Id != Id);
+                Parent.ItemRespondingToAttach.ChangeAttachedItem = default;
                 Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
                 Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
                 Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
@@ -718,6 +741,13 @@ namespace AntDesign
                 {
                     _tooltipLeftVisible = true;
                 }
+            }
+            if (HasAttachedEdgeWithGap && !Master)
+            {
+                Master = true;
+                Slave = false;
+                AttachedItem.Master = false;
+                AttachedItem.Slave = true;
             }
         }
 
@@ -819,7 +849,7 @@ namespace AntDesign
                         LeftValue = rightV;
                         await FocusAsync(_leftHandle);
                     }
-                    else 
+                    else
                     {
                         return;
                     }
@@ -883,7 +913,7 @@ namespace AntDesign
                     LeftValue = leftV;
                 }
             }
-            _changeAttachedItem?.Invoke();
+            ChangeAttachedItem?.Invoke();
         }
 
         internal void SetStyle()
