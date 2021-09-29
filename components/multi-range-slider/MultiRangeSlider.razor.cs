@@ -261,15 +261,15 @@ namespace AntDesign
             //Console.WriteLine($"Added range item {_items.Count} with set left: {item.LeftValue}, right: {item.RightValue}");
         }
 
-        internal double GetLeftBoundary(string id, int fromHandle, int attachedHandleNo)
+        internal double GetLeftBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandle)
         {
             //_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false
             if (AllowOverlapping)
             {
                 if (_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false)
                 {
-                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == 1 ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
-                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == 1 ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
+                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
+                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
                     if (attachedItemPulledEdge < currentItemPulledEdge)
                     {
                         return currentItemPulledEdge - attachedItemPulledEdge;
@@ -287,7 +287,7 @@ namespace AntDesign
 
             if (_isAtfterFirstRender && _boundaries2[id].leftNeighbour != default)
             {
-                if (fromHandle == attachedHandleNo)
+                if (fromHandle == attachedHandle)
                 {
                     if (_boundaries2[id].item.HasAttachedEdgeWithGap)
                     {
@@ -296,18 +296,18 @@ namespace AntDesign
                         //{
                         //    return _boundaries2[id].item.LeftValue;
                         //}
-                        if (attachedHandleNo == 1)
+                        if (attachedHandle == RangeEdge.Left)
                         {
                             return _boundaries2[id].leftNeighbour.LeftValue + _boundaries2[id].item.GapDistance;
                         }
                     }
                     else
                     {
-                        if (attachedHandleNo == 2)
+                        if (attachedHandle == RangeEdge.Right)
                         {
                             return _boundaries2[id].item.LeftValue; //attached is right edge, cannot go beyond current left edge, because the right neighbor (that is attached) cannot exceed beyond current left 
                         }
-                        else if (attachedHandleNo == 1) //do not allow to exceed neighbor's edge
+                        else if (attachedHandle == RangeEdge.Left) //do not allow to exceed neighbor's edge
                         {
                             return _boundaries2[id].leftNeighbour.LeftValue;
                         }
@@ -315,11 +315,11 @@ namespace AntDesign
                 }
                 else
                 {
-                    if (attachedHandleNo == 2)
+                    if (attachedHandle == RangeEdge.Right)
                     {
                         return _boundaries2[id].leftNeighbour.RightValue;
                     }
-                    else if (attachedHandleNo == 1) //do not allow to exceed neighbor's edge
+                    else if (attachedHandle == RangeEdge.Left) //do not allow to exceed neighbor's edge
                     {
                         return _boundaries2[id].leftNeighbour.LeftValue;
                     }
@@ -332,14 +332,14 @@ namespace AntDesign
             return Min;
         }
 
-        internal double GetRightBoundary(string id, int fromHandle, int attachedHandleNo)
+        internal double GetRightBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandleNo)
         {
             if (AllowOverlapping)
             {
                 if (_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false)
                 {
-                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == 1 ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
-                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == 1 ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
+                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
+                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == RangeEdge.Left ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
                     if (attachedItemPulledEdge > currentItemPulledEdge)
                     {
                         return Max - (attachedItemPulledEdge - currentItemPulledEdge);
@@ -361,22 +361,22 @@ namespace AntDesign
                 {
                     if (_boundaries2[id].item.HasAttachedEdgeWithGap)
                     {
-                        if (attachedHandleNo == 1)
+                        if (attachedHandleNo == RangeEdge.Left)
                         {
                             return _boundaries2[id].item.RightValue;
                         }
-                        if (attachedHandleNo == 2)
+                        if (attachedHandleNo == RangeEdge.Right)
                         {
                             return _boundaries2[id].rightNeighbour.RightValue - _boundaries2[id].item.GapDistance; //in a gap situation, gap distance has to be accounted for
                         }
                     }
                     else
                     {
-                        if (attachedHandleNo == 1)
+                        if (attachedHandleNo == RangeEdge.Left)
                         {
                             return _boundaries2[id].rightNeighbour.LeftValue;
                         }
-                        if (attachedHandleNo == 2)
+                        if (attachedHandleNo == RangeEdge.Right)
                         {
                             return _boundaries2[id].rightNeighbour.RightValue;
                         }
@@ -384,11 +384,11 @@ namespace AntDesign
                 }
                 else
                 {
-                    if (attachedHandleNo == 1)
+                    if (attachedHandleNo == RangeEdge.Left)
                     {
                         return _boundaries2[id].item.RightValue;
                     }
-                    if (attachedHandleNo == 2) //attached edge is right, so right boundary 
+                    if (attachedHandleNo == RangeEdge.Right) //attached edge is right, so right boundary 
                     {
                         return _boundaries2[id].item.RightValue;
                     }

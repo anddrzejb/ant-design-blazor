@@ -19,7 +19,7 @@
                      style="@(_leftHandleStyle+_leftFocusZIndex)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, false)"
-                     @ondblclick="e => OnDoubleClick(1)">@_leftHandleFill
+                     @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
                 </div>
             </Unbound>
         </Tooltip>
@@ -35,7 +35,7 @@
                      style="@(_rightHandleStyle+_rightFocusZIndex)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, true)"
-                     @ondblclick="e => OnDoubleClick(2)">@_rightHandleFill
+                     @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
                 </div>
             </Unbound>
         </Tooltip>
@@ -52,7 +52,7 @@
              style="@(_leftHandleStyle+_leftFocusZIndex)" 
              @ref="_leftHandle" 
              @onmousedown="e => OnMouseDownEdge(e, false)"
-             @ondblclick="e => OnDoubleClick(1)">@_leftHandleFill
+             @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
         </div>
         <div tabindex="0" 
              class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2 @_attachedRightHandleClass" 
@@ -64,7 +64,7 @@
              style="@(_rightHandleStyle+_rightFocusZIndex)" 
              @ref="_rightHandle" 
              @onmousedown="(e) => OnMouseDownEdge(e, true)"
-             @ondblclick="e => OnDoubleClick(1)">@_rightHandleFill
+             @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
         </div>
     }
 

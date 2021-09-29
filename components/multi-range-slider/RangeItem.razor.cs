@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Threading.Tasks;
-using AntDesign.core.Extensions;
 using AntDesign.Core.Helpers;
 using AntDesign.JsInterop;
 using Microsoft.AspNetCore.Components;
@@ -13,6 +10,12 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace AntDesign
 {
+    public enum RangeEdge
+    {
+        Left = 1,
+        Right = 2,
+    }
+
     public partial class RangeItem : AntInputComponentBase<(double, double)>
     {
         private const string PreFixCls = "ant-multi-range-slider-item";
@@ -48,8 +51,8 @@ namespace AntDesign
 
             }
         }
-        internal int AttachedHandleNo { get; set; }
-        internal int HandleNoRequestingAttaching { get; set; }
+        internal RangeEdge AttachedHandleNo { get; set; }
+        internal RangeEdge HandleNoRequestingAttaching { get; set; }
         private string _attachedLeftHandleClass = "";
         private string _attachedRightHandleClass = "";
         internal RangeItem AttachedItem { get; set; }
@@ -254,7 +257,7 @@ namespace AntDesign
                 double candidate;
                 if (!Slave)
                 {
-                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, 1, AttachedHandleNo), Parent.GetRightBoundary(Id, 1, AttachedHandleNo));
+                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
                 }
                 else
                 {
@@ -289,7 +292,7 @@ namespace AntDesign
                 double candidate;
                 if (!Slave)
                 {
-                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, 2, AttachedHandleNo), Parent.GetRightBoundary(Id, 2, AttachedHandleNo));
+                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, RangeEdge.Right, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Right, AttachedHandleNo));
                 }
                 else
                 {
@@ -536,29 +539,29 @@ namespace AntDesign
             //Console.WriteLine($"SetFocus {Id}, {_focusClass}");
         }
 
-        private void OnDoubleClick(int handleNo)
+        private void OnDoubleClick(RangeEdge handle)
         {
             if (AttachedHandleNo == 0)
             {
-                RangeItem candidate = handleNo == 1 ? Parent.GetLeftNeighbour(Id) : Parent.GetRightNeighbour(Id);
+                RangeItem candidate = handle == RangeEdge.Left ? Parent.GetLeftNeighbour(Id) : Parent.GetRightNeighbour(Id);
                 if (candidate is null && !Parent.AllowOverlapping) //will be null when there are no other items or edge is closes to either Min or Max
                 {
-                    ResetAttached(handleNo);
+                    ResetAttached();
                     return;
                 }
 
                 if (candidate is not null //only needed when Parent.AllowOverlapping = true
                     &&
-                        (handleNo == 1 && candidate.RightValue == LeftValue
+                        (handle == RangeEdge.Left && candidate.RightValue == LeftValue
                         ||
-                        handleNo == 2 && candidate.LeftValue == RightValue)) //handles overlapping edges (neighboring)
+                        handle == RangeEdge.Right && candidate.LeftValue == RightValue)) //handles overlapping edges (neighboring)
                 {
                     AttachedItem = candidate;
                     _hasAttachedEdge = true;
-                    AttachedHandleNo = handleNo;
+                    AttachedHandleNo = handle;
                     Master = true;
                     AttachedItem.Slave = true;
-                    if (handleNo == 1)
+                    if (handle == RangeEdge.Left)
                     {
                         ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue;
                     }
@@ -566,17 +569,17 @@ namespace AntDesign
                     {
                         ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue;
                     }
-                    ApplyLockEdgeStyle(handleNo, true);
-                    Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, attached: {AttachedItem.LeftValue}-{AttachedItem.RightValue}");
+                    ApplyLockEdgeStyle(handle, true);
+                    Console.WriteLine($"OnDoubleClick {Id}, handle {handle}, attached: {AttachedItem.LeftValue}-{AttachedItem.RightValue}");
                 }
                 else
                 {
                     if (Parent.ItemRequestingAttach is null)
                     {
                         Parent.ItemRequestingAttach = this;
-                        HandleNoRequestingAttaching = handleNo;
-                        ApplyLockEdgeStyle(handleNo);
-                        Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, separated, requesting");
+                        HandleNoRequestingAttaching = handle;
+                        ApplyLockEdgeStyle(handle);
+                        Console.WriteLine($"OnDoubleClick {Id}, handle {handle}, separated, requesting");
                     }
                     else
                     {
@@ -590,12 +593,12 @@ namespace AntDesign
                                 HasAttachedEdgeWithGap = true;
                                 Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = true;
                                 Parent.ItemRequestingAttach.AttachedHandleNo = Parent.ItemRequestingAttach.HandleNoRequestingAttaching;
-                                AttachedHandleNo = handleNo;
+                                AttachedHandleNo = handle;
                                 AttachedItem = Parent.ItemRequestingAttach;
                                 Parent.ItemRequestingAttach.AttachedItem = this;
-                                if (handleNo != AttachedItem.AttachedHandleNo)
+                                if (handle != AttachedItem.AttachedHandleNo)
                                 {
-                                    if (handleNo == 1)
+                                    if (handle == RangeEdge.Left)
                                     {
                                         GapDistance = this.LeftValue - AttachedItem.RightValue;
                                         ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue - GapDistance;
@@ -608,12 +611,12 @@ namespace AntDesign
                                         AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue - GapDistance;
                                     }
                                     AttachedItem.GapDistance = GapDistance;
-                                    ApplyLockEdgeStyle(handleNo, true);
-                                    Parent.ItemRequestingAttach.ApplyLockEdgeStyle(handleNo == 1 ? 2 : 1, true, true);
+                                    ApplyLockEdgeStyle(handle, true);
+                                    Parent.ItemRequestingAttach.ApplyLockEdgeStyle(GetOppositeEdge(handle), true, true);
                                 }
                                 else
                                 {
-                                    if (handleNo == 1)
+                                    if (handle == RangeEdge.Left)
                                     {
                                         GapDistance = this.LeftValue - AttachedItem.LeftValue;
                                         ChangeAttachedItem = () => AttachedItem.LeftValue = this.LeftValue - GapDistance;
@@ -626,41 +629,14 @@ namespace AntDesign
                                         AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.RightValue - GapDistance;
                                     }
                                     AttachedItem.GapDistance = GapDistance;
-                                    ApplyLockEdgeStyle(handleNo, true);
-                                    Parent.ItemRequestingAttach.ApplyLockEdgeStyle(handleNo, true, true);
+                                    ApplyLockEdgeStyle(handle, true);
+                                    Parent.ItemRequestingAttach.ApplyLockEdgeStyle(handle, true, true);
                                 }
-                                Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, separated, matching");
+                                Console.WriteLine($"OnDoubleClick {Id}, handle {handle}, separated, matching");
                             }
-                            else //reset
+                            else 
                             {
-                                //TODO: move or optimize
-                                Parent.ItemRequestingAttach.ResetLockEdgeStyle(Parent.ItemRequestingAttach.Id != Id);
-                                Parent.ItemRequestingAttach.ChangeAttachedItem = default;
-                                Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
-                                Parent.ItemRequestingAttach.AttachedHandleNo = 0;
-                                Parent.ItemRequestingAttach.AttachedItem = null;
-                                Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
-                                Parent.ItemRequestingAttach.GapDistance = 0;
-                                Parent.ItemRequestingAttach.Slave = false;
-                                Parent.ItemRequestingAttach.Master = false;
-                                Parent.ItemRequestingAttach = null;
-
-                                if (Parent.ItemRespondingToAttach is not null)
-                                {
-                                    Parent.ItemRespondingToAttach.ResetLockEdgeStyle(Parent.ItemRespondingToAttach.Id != Id);
-                                    Parent.ItemRespondingToAttach.ChangeAttachedItem = default;
-                                    Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
-                                    Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
-                                    Parent.ItemRespondingToAttach.AttachedItem = null;
-                                    Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
-                                    Parent.ItemRespondingToAttach.GapDistance = 0;
-                                    Parent.ItemRespondingToAttach.Slave = false;
-                                    Parent.ItemRespondingToAttach.Master = false;
-                                    Parent.ItemRespondingToAttach = null;
-                                }
-                                HasAttachedEdgeWithGap = false;
-
-                                Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, separated, reset");
+                                ResetAttached(true);
                             }
                         }
                         else
@@ -668,11 +644,11 @@ namespace AntDesign
                             //allow attaching only neighbors 
                             if (Parent.ItemRespondingToAttach is null
                                 &&
-                                Parent.ItemRequestingAttach.HandleNoRequestingAttaching != handleNo //make sure connected edges are not the same edges
+                                Parent.ItemRequestingAttach.HandleNoRequestingAttaching != handle //make sure connected edges are not the same edges
                                 &&
-                                    (handleNo == 1 && Parent.ItemRequestingAttach.Id == Parent.GetLeftNeighbour(Id).Id //left 
+                                    (handle == RangeEdge.Left && Parent.ItemRequestingAttach.Id == Parent.GetLeftNeighbour(Id).Id //left 
                                     ||
-                                    handleNo == 2 && Parent.ItemRequestingAttach.Id == Parent.GetRightNeighbour(Id).Id //right 
+                                    handle == RangeEdge.Right && Parent.ItemRequestingAttach.Id == Parent.GetRightNeighbour(Id).Id //right 
                                     )
                                )
                             {
@@ -682,10 +658,10 @@ namespace AntDesign
                                 HasAttachedEdgeWithGap = true;
                                 Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = true;
                                 Parent.ItemRequestingAttach.AttachedHandleNo = Parent.ItemRequestingAttach.HandleNoRequestingAttaching;
-                                AttachedHandleNo = handleNo;
+                                AttachedHandleNo = handle;
                                 AttachedItem = Parent.ItemRequestingAttach;
                                 Parent.ItemRequestingAttach.AttachedItem = this;
-                                if (handleNo == 1)
+                                if (handle == RangeEdge.Left)
                                 {
                                     GapDistance = this.LeftValue - AttachedItem.RightValue;
                                     ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue - GapDistance;
@@ -698,52 +674,34 @@ namespace AntDesign
                                     AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue - GapDistance;
                                 }
                                 AttachedItem.GapDistance = GapDistance;
-                                ApplyLockEdgeStyle(handleNo, true);
-                                Parent.ItemRequestingAttach.ApplyLockEdgeStyle(handleNo == 1 ? 2 : 1, true, true);
-                                Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, separated, matching");
+                                ApplyLockEdgeStyle(handle, true);
+                                Parent.ItemRequestingAttach.ApplyLockEdgeStyle(GetOppositeEdge(handle), true, true);
+                                Console.WriteLine($"OnDoubleClick {Id}, handle {handle}, separated, matching");
                             }
-                            else //reset
+                            else 
                             {
-                                //TODO: move or optimize
-                                Parent.ItemRequestingAttach.ResetLockEdgeStyle(Parent.ItemRequestingAttach.Id != Id);
-                                Parent.ItemRequestingAttach.ChangeAttachedItem = default;
-                                Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
-                                Parent.ItemRequestingAttach.AttachedHandleNo = 0;
-                                Parent.ItemRequestingAttach.AttachedItem = null;
-                                Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
-                                Parent.ItemRequestingAttach.GapDistance = 0;
-                                Parent.ItemRequestingAttach.Slave = false;
-                                Parent.ItemRequestingAttach.Master = false;
-                                Parent.ItemRequestingAttach = null;
-
-                                if (Parent.ItemRespondingToAttach is not null)
-                                {
-                                    Parent.ItemRespondingToAttach.ResetLockEdgeStyle(Parent.ItemRespondingToAttach.Id != Id);
-                                    Parent.ItemRespondingToAttach.ChangeAttachedItem = default;
-                                    Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
-                                    Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
-                                    Parent.ItemRespondingToAttach.AttachedItem = null;
-                                    Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
-                                    Parent.ItemRespondingToAttach.GapDistance = 0;
-                                    Parent.ItemRespondingToAttach.Slave = false;
-                                    Parent.ItemRespondingToAttach.Master = false;
-                                    Parent.ItemRespondingToAttach = null;
-                                }
-                                HasAttachedEdgeWithGap = false;
-
-                                Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, separated, reset");
+                                ResetAttached(true);
                             }
                         }
                     }
                 }
                 return;
             }
-            ResetAttached(handleNo);
+            ResetAttached();
         }
 
-        private void ApplyLockEdgeStyle(int handleNo, bool locked = false, bool requestStateChange = false)
+        private static RangeEdge GetOppositeEdge(RangeEdge edge)
         {
-            if (handleNo == 1)
+            if (edge == RangeEdge.Left)
+            {
+                return RangeEdge.Right;
+            }
+            return RangeEdge.Left;
+        }
+
+        private void ApplyLockEdgeStyle(RangeEdge handle, bool locked = false, bool requestStateChange = false)
+        {
+            if (handle == RangeEdge.Left)
             {
                 if (locked)
                 {
@@ -790,50 +748,60 @@ namespace AntDesign
             }
         }
 
-        private void ResetAttached(int handleNo)
+        private void ResetAttached(bool forceReset = false)
         {
+            if (!_hasAttachedEdge && !forceReset)
+            {
+                return;
+            }
             //reset all attached
-            if (AttachedItem is not null)
+            if (HasAttachedEdgeWithGap || forceReset)
             {
-                AttachedItem.Slave = false;
-            }
-            ResetLockEdgeStyle(false);
-            SetFocus(_isFocused);
-            //_attachedItem.ResetLockEdgeStyle(true);
-            Master = false;
-            AttachedItem = default;
-            _hasAttachedEdge = false;
-            HasAttachedEdgeWithGap = false;
-            ChangeAttachedItem = default;
-            AttachedHandleNo = 0;
-            if (Parent.ItemRequestingAttach is not null)
-            {
-                Parent.ItemRequestingAttach.ResetLockEdgeStyle(Parent.ItemRequestingAttach.Id != Id);
-                Parent.ItemRequestingAttach.ChangeAttachedItem = default;
-                Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
-                Parent.ItemRequestingAttach.AttachedHandleNo = 0;
-                Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
-                Parent.ItemRequestingAttach.GapDistance = 0;
-                Parent.ItemRequestingAttach.Master = false;
-                Parent.ItemRequestingAttach.Slave = false;
-                Parent.ItemRequestingAttach.AttachedItem = null;
-                Parent.ItemRequestingAttach = null;
-            }
-            if (Parent.ItemRespondingToAttach is not null)
-            {
-                Parent.ItemRespondingToAttach.ResetLockEdgeStyle(Parent.ItemRespondingToAttach.Id != Id);
-                Parent.ItemRespondingToAttach.ChangeAttachedItem = default;
-                Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
-                Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
-                Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
-                Parent.ItemRespondingToAttach.GapDistance = 0;
-                Parent.ItemRespondingToAttach.Master = false;
-                Parent.ItemRespondingToAttach.Slave = false;
-                Parent.ItemRespondingToAttach.AttachedItem = null;
-                Parent.ItemRespondingToAttach = null;
+                if (Parent.ItemRequestingAttach is not null)
+                {
+                    Parent.ItemRequestingAttach.ResetLockEdgeStyle(Parent.ItemRequestingAttach.Id != Id);
+                    Parent.ItemRequestingAttach.ChangeAttachedItem = default;
+                    Parent.ItemRequestingAttach.HandleNoRequestingAttaching = 0;
+                    Parent.ItemRequestingAttach.AttachedHandleNo = 0;
+                    Parent.ItemRequestingAttach.AttachedItem = null;
+                    Parent.ItemRequestingAttach.HasAttachedEdgeWithGap = false;
+                    Parent.ItemRequestingAttach.GapDistance = 0;
+                    Parent.ItemRequestingAttach.Master = false;
+                    Parent.ItemRequestingAttach.Slave = false;
+                    Parent.ItemRequestingAttach.AttachedItem = null;
+                    Parent.ItemRequestingAttach = null;
+                }
+                if (Parent.ItemRespondingToAttach is not null)
+                {
+                    Parent.ItemRespondingToAttach.ResetLockEdgeStyle(Parent.ItemRespondingToAttach.Id != Id);
+                    Parent.ItemRespondingToAttach.ChangeAttachedItem = default;
+                    Parent.ItemRespondingToAttach.HandleNoRequestingAttaching = 0;
+                    Parent.ItemRespondingToAttach.AttachedHandleNo = 0;
+                    Parent.ItemRespondingToAttach.AttachedItem = null;
+                    Parent.ItemRespondingToAttach.HasAttachedEdgeWithGap = false;
+                    Parent.ItemRespondingToAttach.GapDistance = 0;
+                    Parent.ItemRespondingToAttach.Master = false;
+                    Parent.ItemRespondingToAttach.Slave = false;
+                    Parent.ItemRespondingToAttach.AttachedItem = null;
+                    Parent.ItemRespondingToAttach = null;
 
+                }
             }
-            Console.WriteLine($"OnDoubleClick {Id}, handle {handleNo}, attached: reset");
+            else
+            {
+                if (AttachedItem is not null)
+                {
+                    AttachedItem.Slave = false;
+                }
+                ResetLockEdgeStyle(false);
+                Master = false;
+                AttachedItem = default;
+                AttachedHandleNo = 0;
+                ChangeAttachedItem = default;
+            }
+            SetFocus(_isFocused);
+            HasAttachedEdgeWithGap = false;
+            //Console.WriteLine($"OnDoubleClick {Id}, handle {handle}, attached: reset");
         }
 
         private double _trackedClientX;
