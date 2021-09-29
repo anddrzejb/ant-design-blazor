@@ -17,6 +17,9 @@ namespace AntDesign
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
 
+        [Parameter]
+        public bool AllowOverlapping { get; set; }
+
         /// <summary>
         /// If true, the slider will be vertical.
         /// </summary>
@@ -260,6 +263,28 @@ namespace AntDesign
 
         internal double GetLeftBoundary(string id, int fromHandle, int attachedHandleNo)
         {
+            //_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false
+            if (AllowOverlapping)
+            {
+                if (_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false)
+                {
+                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == 1 ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
+                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == 1 ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
+                    if (attachedItemPulledEdge < currentItemPulledEdge)
+                    {
+                        return currentItemPulledEdge - attachedItemPulledEdge;
+                    }
+                    else
+                    {
+                        return Min; // Math.Min(Min, Min - _boundaries2[id].item.GapDistance);
+                    }
+                }
+                else
+                {
+                    return Min;
+                }
+            }
+
             if (_isAtfterFirstRender && _boundaries2[id].leftNeighbour != default)
             {
                 if (fromHandle == attachedHandleNo)
@@ -309,6 +334,27 @@ namespace AntDesign
 
         internal double GetRightBoundary(string id, int fromHandle, int attachedHandleNo)
         {
+            if (AllowOverlapping)
+            {
+                if (_boundaries2?[id].item?.HasAttachedEdgeWithGap ?? false)
+                {
+                    double currentItemPulledEdge = _boundaries2[id].item.AttachedHandleNo == 1 ? _boundaries2[id].item.LeftValue : _boundaries2[id].item.RightValue;
+                    double attachedItemPulledEdge = _boundaries2[id].item.AttachedItem.AttachedHandleNo == 1 ? _boundaries2[id].item.AttachedItem.LeftValue : _boundaries2[id].item.AttachedItem.RightValue;
+                    if (attachedItemPulledEdge > currentItemPulledEdge)
+                    {
+                        return Max - (attachedItemPulledEdge - currentItemPulledEdge);
+                    }
+                    else
+                    {
+                        return Max; // Math.Min(Min, Min - _boundaries2[id].item.GapDistance);
+                    }
+                }
+                else
+                {
+                    return Max;
+                }
+            }
+
             if (_isAtfterFirstRender && _boundaries2[id].rightNeighbour != default)
             {
                 if (fromHandle == attachedHandleNo)
