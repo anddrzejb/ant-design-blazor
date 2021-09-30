@@ -591,6 +591,23 @@ namespace AntDesign
             SetLockEdgeStyle(handle, true);
         }
 
+        private double CalculateGapDistance()
+        {
+            if (AttachedHandleNo != AttachedItem.AttachedHandleNo)
+            {
+                if (AttachedHandleNo == RangeEdge.Left)
+                {
+                    return this.LeftValue - AttachedItem.RightValue;
+                }
+                return AttachedItem.LeftValue - this.RightValue;
+            }
+            if (AttachedHandleNo == RangeEdge.Left)
+            {
+                return this.LeftValue - AttachedItem.LeftValue;
+            }
+            return AttachedItem.RightValue - this.RightValue;
+        }
+
         private bool AreEdgesNeighbours(RangeEdge handle)
         {
             if (Parent.ItemRespondingToAttach is not null)
@@ -845,6 +862,11 @@ namespace AntDesign
             if (_mouseDownOnTrack)
             {
                 _mouseDownOnTrack = false;
+                if (HasAttachedEdgeWithGap)
+                {
+                    GapDistance = CalculateGapDistance();
+                    AttachedItem.GapDistance = GapDistance;
+                }
             }
             if (_toolTipRight != null)
             {

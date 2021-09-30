@@ -3,6 +3,7 @@
 
 
 @multi-range-slider-handle-lock-size: 20px;
+@multi-range-slider-margin: 10px 7px 10px;
 @multi-range-slider-prefix-cls: ~'@{ant-prefix}-multi-range-slider';
 @multi-range-slider-handle-margin-top: 3px;
 @multi-range-slider-handle-margin-left: 3px;
@@ -13,10 +14,10 @@
 
   position: relative;
   height: 12px;
-  margin: @slider-margin;
-  padding: 4px 0;
+  margin: @multi-range-slider-margin;
   cursor: pointer;
   touch-action: none;
+  user-select:none;
 
   .range-vertical();
 
@@ -182,8 +183,6 @@
   &-vertical {
     width: 25px;
     height: 100%;
-    margin: 6px -3px;
-    padding: 0 4px;    
 
     &-oversized {
       overflow: hidden;

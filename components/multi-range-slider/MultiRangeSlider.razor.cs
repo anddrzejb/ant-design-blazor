@@ -49,7 +49,7 @@ namespace AntDesign
                 //without padding, vertical scroll hides most of the rendered elements
                 if (Oversized)
                 {
-                    _overflow = "overflow-y: auto;padding-right: 24px; height: inherit; width: max-content";
+                    _overflow = "overflow-y: auto;padding-right: 8px; height: inherit; width: max-content";
                 }
                 else
                 {
@@ -62,7 +62,7 @@ namespace AntDesign
             {
                 if (Oversized)
                 {
-                    _overflow = "overflow-x: auto;padding-bottom: 4px;";
+                    _overflow = "overflow-x: auto;";
                 }
                 else
                 {
