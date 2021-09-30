@@ -162,8 +162,9 @@ namespace AntDesign
         [Parameter]
         public (double, double) DefaultValue { get; set; }
 
+        //TODO: check with mixing of Disabled in Range and in parent
         /// <summary>
-        /// If true, the slider will not be interactable
+        /// If true, the slider will not be intractable
         /// </summary>
         [Parameter]
         public bool Disabled { get; set; }
@@ -433,13 +434,19 @@ namespace AntDesign
             }
 
             //evaluate clicked position in respect to each edge
-            _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
-            double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
-            double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
+            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Ref);
             double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
             _distanceToLeftHandle = clickedValue - LeftValue;
             _distanceToRightHandle = RightValue - clickedValue;
             Console.WriteLine($"Range item clicked. Click value: {clickedValue}, distance to Left:Right {_distanceToLeftHandle}:{_distanceToRightHandle}");
+        }
+
+        private async Task<(double, double)> GetSliderDimensions(ElementReference reference)
+        {
+            _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, reference);
+            return ((double)(Parent.Vertical ? _sliderDom.AbsoluteTop  : _sliderDom.AbsoluteLeft),
+                    (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth));
+
         }
 
         internal void SetFocus(bool isFocused)
@@ -860,9 +867,7 @@ namespace AntDesign
 
         private async Task CalculateValueAsync(double clickClient)
         {
-            _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
-            double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
-            double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
+            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent.Ref);
             if (_right)
             {
                 await ProcessNewRightValue(clickClient, sliderOffset, sliderLength);
@@ -1013,8 +1018,17 @@ namespace AntDesign
         internal void SetStyle()
         {
             var rightHandPercentage = (RightValue - Min) / Parent.MinMaxDelta;
-            _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, Formatter.ToPercentWithoutBlank(rightHandPercentage));
             var leftHandPercentage = (LeftValue - Min) / Parent.MinMaxDelta;
+            //var skew = (20d / 600d);
+            //if (LeftValue != double.MinValue)
+            //{
+            //    leftHandPercentage -= skew;
+            //}
+            //if (RightValue != double.MaxValue)
+            //{
+            //    rightHandPercentage -= skew;
+            //}
+            _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, Formatter.ToPercentWithoutBlank(rightHandPercentage));
             _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, Formatter.ToPercentWithoutBlank(leftHandPercentage), Formatter.ToPercentWithoutBlank((RightValue - LeftValue) / Parent.MinMaxDelta));
             _leftHandleStyle = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, Formatter.ToPercentWithoutBlank(leftHandPercentage));
             StateHasChanged();
@@ -1024,11 +1038,11 @@ namespace AntDesign
         {
             base.OnValueChange(value);
 
-            if (!_hasAttachedEdge && IsLeftAndRightChanged(value))
-            {
-                _leftValue = double.MinValue;
-                _rightValue = double.MaxValue;
-            }
+            //if (!_hasAttachedEdge && IsLeftAndRightChanged(value))
+            //{
+            //    _leftValue = double.MinValue;
+            //    _rightValue = double.MaxValue;
+            //}
             if (LeftValue != value.Item1)
             {
                 LeftValue = value.Item1;

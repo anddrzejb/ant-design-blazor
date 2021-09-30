@@ -5,7 +5,9 @@
 @multi-range-slider-handle-lock-size: 20px;
 @multi-range-slider-prefix-cls: ~'@{ant-prefix}-multi-range-slider';
 @multi-range-slider-handle-margin-top: 3px;
+@multi-range-slider-handle-margin-left: 3px;
 @multi-range-slider-handle-lock-margin-top: 0px;
+@multi-range-slider-handle-lock-margin-left: 0px;
 .@{multi-range-slider-prefix-cls} {
   .reset-component();
 
@@ -16,7 +18,7 @@
   cursor: pointer;
   touch-action: none;
 
-  .vertical();
+  .range-vertical();
 
   &-with-marks {
     margin-bottom: 28px;
@@ -176,25 +178,33 @@
   }
 }
 
-.vertical() {
+.range-vertical() {
   &-vertical {
-    width: 12px;
+    width: 25px;
     height: 100%;
-    margin: 6px 10px;
-    padding: 0 4px;
+    margin: 6px -3px;
+    padding: 0 4px;    
+
+    &-oversized {
+      overflow: hidden;
+    }
 
     .@{multi-range-slider-prefix-cls}-rail {
-      width: 4px;
+      width: 20px;
       height: 100%;
     }
 
     .@{multi-range-slider-prefix-cls}-track {
-      width: 4px;
+      width: 20px;
     }
 
     .@{multi-range-slider-prefix-cls}-handle {
       margin-top: -6px; // we chould consider border width as well: (10 + 2 ) / 2
-      margin-left: -5px;
+      margin-left: @multi-range-slider-handle-margin-left;
+
+      &-lock {
+        margin-left: @multi-range-slider-handle-lock-margin-left;
+      }
     }
 
     .@{multi-range-slider-prefix-cls}-mark {

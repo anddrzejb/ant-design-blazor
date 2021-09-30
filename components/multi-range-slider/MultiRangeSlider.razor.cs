@@ -1,12 +1,10 @@
-﻿
-using AntDesign.Core.Helpers;
+﻿using AntDesign.Core.Helpers;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.AspNetCore.Components.Web;
 using System.Linq;
 using System;
-using OneOf.Types;
 
 namespace AntDesign
 {
@@ -14,6 +12,9 @@ namespace AntDesign
     {
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isAtfterFirstRender = false;
+        private string _overflow = "display: inline;";
+        private string _sizeType = "width";
+        private bool _oversized;
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
 
@@ -21,10 +22,57 @@ namespace AntDesign
         public bool AllowOverlapping { get; set; }
 
         /// <summary>
+        /// If true, the slider will not be intractable
+        /// </summary>
+        [Parameter]
+        public bool Disabled { get; set; }
+
+        /// <summary>
         /// If true, the slider will be vertical.
         /// </summary>
         [Parameter]
-        public bool Vertical { get; set; }
+        public bool Vertical
+        {
+            get => _vertical;
+            set
+            {
+                _vertical = value;
+                SetOrientationStyles();
+            }
+        }
+
+        private void SetOrientationStyles()
+        {
+            if (_vertical)
+            {
+                //padding is 20px of the track width + "margin" of possible scroll;
+                //without padding, vertical scroll hides most of the rendered elements
+                if (Oversized)
+                {
+                    _overflow = "overflow-y: auto;padding-right: 24px; height: inherit; width: max-content";
+                }
+                else
+                {
+                    _overflow = "display: inline;";
+                }
+                //_orientationStyle = "margin-top: 7px; margin-bottom: 7px;";
+                _sizeType = "height";
+            }
+            else
+            {
+                if (Oversized)
+                {
+                    _overflow = "overflow-x: auto;padding-bottom: 4px;";
+                }
+                else
+                {
+                    _overflow = "display: inline;";
+                }
+                //_orientationStyle = "";
+                _sizeType = "width";
+            }
+            //Console.WriteLine($"SetOrientationStyles: {_overflow}, size: {_sizeType}");
+        }
 
         /// <summary>
         /// Tick mark of Slider, type of key must be number, and must in closed interval [min, max], each mark can declare its own style
@@ -123,30 +171,44 @@ namespace AntDesign
             get => _visibleMin;
             set
             {
-                if (value < Min)
+                //TODO: apply also scroll-to to focus on selected area
+                var hasChanged = value != _visibleMin;
+                if (hasChanged)
                 {
-                    _visibleMin = Min;
+                    if (value < Min)
+                    {
+                        _visibleMin = Min;
+                    }
+                    else
+                    {
+                        _visibleMin = value;
+                    }
+                    Oversized = Min < _visibleMin || Max > _visibleMax;
+                    SetOrientationStyles();
                 }
-                else
-                {
-                    _visibleMin = value;
-                }
+
             }
         }
 
         [Parameter]
         public double VisibleMax
         {
-            get => _visibleMax; 
+            get => _visibleMax;
             set
             {
-                if (value > Max)
+                var hasChanged = value != _visibleMax;
+                if (hasChanged)
                 {
-                    _visibleMax = Max;
-                }
-                else
-                {
-                    _visibleMax = value;
+                    if (value > Max)
+                    {
+                        _visibleMax = Max;
+                    }
+                    else
+                    {
+                        _visibleMax = value;
+                    }
+                    Oversized = Min < _visibleMin || Max > _visibleMax;
+                    SetOrientationStyles();
                 }
             }
         }
@@ -199,7 +261,7 @@ namespace AntDesign
         protected override void OnInitialized()
         {
             base.OnInitialized();
-            _trackWidth = GetRangeFullWidth();            
+            _trackSize = GetRangeFullSize();
         }
 
         protected override void OnParametersSet()
@@ -210,7 +272,13 @@ namespace AntDesign
 
             ClassMapper.Clear()
                 .Add(PreFixCls)
+                .If($"{PreFixCls}-disabled", () => Disabled)
+                .If($"{PreFixCls}-vertical", () => Vertical)
+                .If($"{PreFixCls}-vertical-oversized", () => Vertical && Oversized)
+                .If($"{PreFixCls}-with-marks", () => Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
+
+            SetOrientationStyles();
         }
 
         private void ValidateParameter()
@@ -339,7 +407,7 @@ namespace AntDesign
                 else
                 {
                     //for single edge, all except the closes to the Max
-                    return _boundaries[id].rightNeighbour.LeftValue; 
+                    return _boundaries[id].rightNeighbour.LeftValue;
 
                 }
             }
@@ -455,6 +523,7 @@ namespace AntDesign
         }
 
         internal double MinMaxDelta => Max - Min;
+        internal bool Oversized { get => _oversized; set => _oversized = value; }
 
         private string SetMarkPosition(double key)
         {
@@ -471,21 +540,23 @@ namespace AntDesign
             return String.Empty;
         }
 
-        private string _trackWidth = "";
-        private string GetRangeFullWidth()
+        private string _trackSize = "";
+        private string GetRangeFullSize()
         {
-            Console.WriteLine($"Min:{Min} Max:{Max} VisibleMin:{VisibleMin} VisibleMax:{VisibleMax}");
+            //Console.WriteLine($"Min:{Min} Max:{Max} VisibleMin:{VisibleMin} VisibleMax:{VisibleMax}");
             if (Min >= VisibleMin && Max <= VisibleMax)
             {
                 return "";
             }
             else
             {
-                return $"width: {((Max - Min) / (VisibleMax - VisibleMin)) * 100}%";
+                return $"{_sizeType}: {((Max - Min) / (VisibleMax - VisibleMin)) * 100}%";
             }
         }
 
         private RangeItem _focusedItem;
+        private bool _vertical;
+
         internal void SetRangeItemFocus(RangeItem item, bool isFocused)
         {
             if (_focusedItem is not null)

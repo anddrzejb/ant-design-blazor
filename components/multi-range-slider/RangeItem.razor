@@ -3,7 +3,7 @@
 @using Microsoft.AspNetCore.Components.Web
 
 <div class="@ClassMapper.Class" id="@Id" @ref="Ref">
-    <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="@_trackStyle" @onmousedown="@OnRangeItemClick">
+    <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="z-index: 899;@_trackStyle" @onmousedown="@OnRangeItemClick">
     </div>
     @if (Parent.HasTooltip)
     {
