@@ -25,13 +25,20 @@ namespace AntDesign
         private string _leftFocusZIndex = "z-index: 900;";
         private string _rightFocusZIndex = "z-index: 900;";
         private bool _mouseDown;
-        private bool _mouseMove;
+        private bool _mouseDownOnTrack;
         private bool _right = true;
         private bool _isInitialized = false;
         private double _initialLeftValue;
         private double _initialRightValue;
         private Tooltip _toolTipRight;
         private Tooltip _toolTipLeft;
+
+        /// <summary>
+        /// Used to figure out how much to move left & right when range is moved
+        /// </summary>
+        double _distanceToLeftHandle;
+        double _distanceToRightHandle;
+
 
         private bool _hasAttachedEdge;
         internal bool HasAttachedEdgeWithGap
@@ -202,14 +209,19 @@ namespace AntDesign
                         candidate = value;
                     }
                 }
-                if (_leftValue != candidate)
+                if (_leftValue != value)
                 {
-                    _leftValue = candidate;
-                    SetStyle();
-                    if (value != CurrentValue.Item1)
-                        CurrentValue = (_leftValue, RightValue);
+                    ChangeLeftValue(candidate, value);
                 }
             }
+        }
+
+        private void ChangeLeftValue(double value, double previousValue)
+        {
+            _leftValue = value;
+            SetStyle();
+            if (previousValue != CurrentValue.Item1)
+                CurrentValue = (_leftValue, RightValue);
         }
 
         private double _rightValue = double.MaxValue;
@@ -236,14 +248,19 @@ namespace AntDesign
                         candidate = value;
                     }
                 }
-                if (_rightValue != candidate)
+                if (_rightValue != value)
                 {
-                    _rightValue = candidate;
-                    SetStyle();
-                    if (value != CurrentValue.Item2)
-                        CurrentValue = (LeftValue, _rightValue);
+                    ChangeRightValue(candidate, value);
                 }
             }
+        }
+
+        private void ChangeRightValue(double value, double previousValue)
+        {
+            _rightValue = value;
+            SetStyle();
+            if (previousValue != CurrentValue.Item2)
+                CurrentValue = (LeftValue, _rightValue);
         }
 
         private double Clamp(
@@ -259,8 +276,6 @@ namespace AntDesign
             }
             return Parent.GetNearestStep(value);
         }
-
-
 
         /// <summary>
         /// Fire when onmouseup is fired.
@@ -397,13 +412,34 @@ namespace AntDesign
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private void OnRangeItemClick(MouseEventArgs args)
+        private async Task OnRangeItemClick(MouseEventArgs args)
         {
             if (!_isFocused)
             {
                 SetFocus(true);
                 Parent.SetRangeItemFocus(this, true);
             }
+            _mouseDownOnTrack = !Disabled;
+            _initialLeftValue = _leftValue;
+            _initialRightValue = _rightValue;
+            _trackedClientX = args.ClientX;
+            _trackedClientY = args.ClientY;
+            if (_toolTipRight != null)
+            {
+                _tooltipRightVisible = true;
+                _toolTipRight.SetVisible(true, true);
+                _tooltipLeftVisible = true;
+                _toolTipLeft.SetVisible(true, true);
+            }
+
+            //evaluate clicked position in respect to each edge
+            _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
+            double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
+            double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
+            double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
+            _distanceToLeftHandle = clickedValue - LeftValue;
+            _distanceToRightHandle = RightValue - clickedValue;
+            Console.WriteLine($"Range item clicked. Click value: {clickedValue}, distance to Left:Right {_distanceToLeftHandle}:{_distanceToRightHandle}");
         }
 
         internal void SetFocus(bool isFocused)
@@ -773,8 +809,15 @@ namespace AntDesign
             {
                 _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
                 _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
-                _mouseMove = true;
                 await CalculateValueAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble());
+
+                OnChange?.Invoke(CurrentValue);
+            }
+            if (_mouseDownOnTrack)
+            {
+                _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
+                _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
+                await CalculateValuesAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble());
 
                 OnChange?.Invoke(CurrentValue);
             }
@@ -792,18 +835,22 @@ namespace AntDesign
                     OnAfterChange?.Invoke(CurrentValue);
                 }
             }
+            if (_mouseDownOnTrack)
+            {
+                _mouseDownOnTrack = false;
+            }
             if (_toolTipRight != null)
             {
                 if (_tooltipRightVisible != TooltipVisible)
                 {
                     _tooltipRightVisible = TooltipVisible;
-                    _toolTipRight.SetVisible(TooltipVisible);
+                    _toolTipRight.SetVisible(TooltipVisible, true);
                 }
 
                 if (_tooltipLeftVisible != TooltipVisible)
                 {
                     _tooltipLeftVisible = TooltipVisible;
-                    _toolTipLeft.SetVisible(TooltipVisible);
+                    _toolTipLeft.SetVisible(TooltipVisible, true);
                 }
             }
 
@@ -827,6 +874,26 @@ namespace AntDesign
             ChangeAttachedItem?.Invoke();
         }
 
+        private async Task CalculateValuesAsync(double clickClient)
+        {
+            _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
+            double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
+            double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
+
+            double dragPosition = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
+            double rightV = dragPosition + _distanceToRightHandle;
+            double leftV = dragPosition - _distanceToLeftHandle;
+            //evaluate if both rightV & leftV are within acceptable values
+            double rightCandidate = Clamp(rightV, Parent.GetLeftBoundary(Id, RangeEdge.Right, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Right, AttachedHandleNo));
+            double leftCandidate = Clamp(leftV, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
+            if (leftCandidate != LeftValue && rightCandidate != RightValue)
+            {
+                ChangeLeftValue(leftCandidate, LeftValue);
+                ChangeRightValue(rightCandidate, RightValue);
+            }
+
+        }
+
         private async Task ProcessNewRightValue(double clickClient, double sliderOffset, double sliderLength)
         {
             double rightV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
@@ -843,6 +910,7 @@ namespace AntDesign
                     if (_mouseDown)
                         RightValue = _initialLeftValue;
                     LeftValue = rightV;
+                    SwitchTooltip(RangeEdge.Left);
                     await FocusAsync(_leftHandle);
                 }
                 else
@@ -872,6 +940,7 @@ namespace AntDesign
                     if (_mouseDown)
                         LeftValue = _initialRightValue;
                     RightValue = leftV;
+                    SwitchTooltip(RangeEdge.Right);
                     await FocusAsync(_rightHandle);
                 }
                 else
@@ -883,6 +952,33 @@ namespace AntDesign
             {
                 LeftValue = leftV;
             }
+        }
+
+        private void SwitchTooltip(RangeEdge toHandle)
+        {
+            if (_toolTipRight == null)
+            {
+                return;
+            }
+
+            if (toHandle == RangeEdge.Left)
+            {
+
+                if (_tooltipRightVisible != TooltipVisible)
+                {
+                    _tooltipRightVisible = TooltipVisible;
+                    _toolTipRight.SetVisible(TooltipVisible, true);
+                }
+                _tooltipLeftVisible = true;
+                return;
+            }
+
+            if (_tooltipLeftVisible != TooltipVisible)
+            {
+                _tooltipLeftVisible = TooltipVisible;
+                _toolTipLeft.SetVisible(TooltipVisible, true);
+            }
+            _tooltipRightVisible = true;
         }
 
         private double CalculateNewHandleValue(double clickClient, double sliderOffset, double sliderLength)

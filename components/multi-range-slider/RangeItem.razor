@@ -19,6 +19,7 @@
                      style="@(_leftHandleStyle+_leftFocusZIndex)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, false)"
+                     @onmousedown:stopPropagation
                      @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
                 </div>
             </Unbound>
@@ -35,6 +36,7 @@
                      style="@(_rightHandleStyle+_rightFocusZIndex)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, true)"
+                     @onmousedown:stopPropagation
                      @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
                 </div>
             </Unbound>
@@ -52,6 +54,7 @@
              style="@(_leftHandleStyle+_leftFocusZIndex)" 
              @ref="_leftHandle" 
              @onmousedown="e => OnMouseDownEdge(e, false)"
+             @onmousedown:stopPropagation
              @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
         </div>
         <div tabindex="0" 
@@ -64,6 +67,7 @@
              style="@(_rightHandleStyle+_rightFocusZIndex)" 
              @ref="_rightHandle" 
              @onmousedown="(e) => OnMouseDownEdge(e, true)"
+             @onmousedown:stopPropagation
              @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
         </div>
     }

@@ -606,6 +606,20 @@ namespace AntDesign.Internal
         /// Toggle overlay visibility.
         /// </summary>
         /// <param name="visible">boolean: visibility true/false</param>
-        public void SetVisible(bool visible) => Visible = visible;
+        public void SetVisible(bool visible, bool force = false)
+        {
+            Visible = visible;
+            if (force)
+            {
+                if (visible)
+                {
+                    InvokeAsync(async () => await _overlay.Show());
+                }
+                else
+                {
+                    InvokeAsync(async () => await _overlay.Hide(force));
+                }
+            }
+        }
     }
 }

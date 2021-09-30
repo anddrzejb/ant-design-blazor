@@ -128,7 +128,6 @@ namespace AntDesign.Internal
             {
                 await Hide(true);
             }
-
             _preVisible = Trigger.Visible;
             await base.OnParametersSetAsync();
         }
