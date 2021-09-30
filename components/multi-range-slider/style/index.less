@@ -108,7 +108,7 @@
 
   &-mark {
     position: absolute;
-    top: 14px;
+    top: 24px;
     left: 0;
     width: 100%;
     font-size: @font-size-base;
@@ -136,15 +136,22 @@
   }
 
   &-dot {
-    position: absolute;
-    top: -2px;
+    position: absolute;    
     width: 8px;
     height: 8px;
     margin-left: -4px;
     background-color: @component-background;
-    border: 2px solid @slider-dot-border-color;
+    border: 2px solid @slider-dot-border-color-active;
     border-radius: 50%;
     cursor: pointer;
+
+    &-top {
+      top: -2px;
+    } 
+
+    &-bottom {
+      top: 14px;
+    }
 
     &:first-child {
       margin-left: -4px;
@@ -152,9 +159,14 @@
     &:last-child {
       margin-left: -4px;
     }
-    &-active {
+/*    &-active { //possibly include for non-overlapping; no point when multiple overlapping
       border-color: @slider-dot-border-color-active;
-    }
+    }*/
+  }
+
+  &-dot-line-dot {
+    border: 1px solid @slider-dot-border-color-active;
+    margin-left: -1px;
   }
 
   &-disabled {

@@ -12,7 +12,11 @@
             {
                 @foreach (RangeItemMark mark in Marks)
                 {
-                    <span class="ant-multi-range-slider-dot @IsActiveMark(mark.Key)" style=@($"{(Vertical ? "bottom" : "left")}: {SetMarkPosition(mark.Key)};")></span>
+                    <span style="position: absolute;@($"{(Vertical ? "bottom" : "left")}: {SetMarkPosition(mark.Key)};")">
+                        <span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-top"></span>
+                        <span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-bottom"></span>
+                        <span class="ant-multi-range-slider-dot-line-dot"></span>
+                    </span>
                 }
             }
         </div>
