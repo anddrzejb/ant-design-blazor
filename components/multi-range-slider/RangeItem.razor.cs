@@ -155,7 +155,6 @@ namespace AntDesign
         [CascadingParameter(Name = "Range")]
         public MultiRangeSlider Parent { get => _parent; set => _parent = value; }
 
-
         /// <summary>
         /// The default value of slider. When <see cref="Range"/> is false, use number, otherwise, use [number, number]
         /// </summary>
@@ -373,7 +372,7 @@ namespace AntDesign
 
             ClassMapper.Clear()
                 .Add($"{PreFixCls}-item")
-                .If($"{PreFixCls}-disabled", () => Disabled)
+                .If($"{PreFixCls}-disabled", () => Disabled || _parent.Disabled)
                 .If($"{PreFixCls}-vertical", () => Parent.Vertical)
                 .If($"{PreFixCls}-with-marks", () => Parent.Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
@@ -434,7 +433,7 @@ namespace AntDesign
             }
 
             //evaluate clicked position in respect to each edge
-            _mouseDownOnTrack = !Disabled;
+            _mouseDownOnTrack = !Disabled && !Parent.Disabled;
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
             double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
             _distanceToLeftHandle = clickedValue - LeftValue;
@@ -809,7 +808,7 @@ namespace AntDesign
 
         private void OnMouseDownEdge(MouseEventArgs args, bool right)
         {
-            _mouseDown = !Disabled;
+            _mouseDown = !Disabled && !Parent.Disabled;
             SetFocus(true);
             Parent.SetRangeItemFocus(this, true);
             _right = right;
@@ -1160,7 +1159,7 @@ namespace AntDesign
         }
 
         private (double, double) _value;
-        private MultiRangeSlider _parent;
+        private MultiRangeSlider _parent;        
         private bool _hasAttachedEdgeWithGap;
 
         /// <summary>

@@ -10,6 +10,16 @@ namespace AntDesign
 {
     public partial class MultiRangeSlider : AntInputComponentBase<IEnumerable<(double, double)>>
     {
+        //TODO: performance - minimize re-renders
+        //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
+        //TODO: turn on/off overlapping live
+        //TODO: switch between vertical & horizontal live (animation?)
+        //TODO: for oversized move scrollbar so the shown range if from VisibleMin to VisibleMax
+        //TODO: zoom in using VisibleMin / VisibleMax changed live
+        //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
+        //TODO: RangeItems should be customizable similarly to tags (visuals)
+        //TODO: Before any move, execute a callback that will have the ability to stop the move (EventCallback<bool>)
+        //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         internal const int VerticalOversizedTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isAtfterFirstRender = false;
