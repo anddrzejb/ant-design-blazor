@@ -423,7 +423,10 @@ namespace AntDesign
             }
             if (attachedHandleNo > 0) //because this is with attached, it's max is its own current Right
             {
-                return _boundaries[id].item.RightValue;
+                if (!_boundaries[id].item.IsRangeDragged)
+                {
+                    return _boundaries[id].item.RightValue;
+                }
             }
             return Max;
         }

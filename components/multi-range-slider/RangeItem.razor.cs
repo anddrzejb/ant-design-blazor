@@ -38,7 +38,7 @@ namespace AntDesign
         /// </summary>
         double _distanceToLeftHandle;
         double _distanceToRightHandle;
-
+        internal bool IsRangeDragged { get; set; }
         internal bool HasAttachedEdge { get; set; }
 
         internal bool HasAttachedEdgeWithGap
@@ -862,6 +862,7 @@ namespace AntDesign
             }
             if (_mouseDownOnTrack)
             {
+                IsRangeDragged = true;
                 _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
                 _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
                 if (await CalculateValuesAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble()))
@@ -886,6 +887,7 @@ namespace AntDesign
             if (_mouseDownOnTrack)
             {
                 _mouseDownOnTrack = false;
+                IsRangeDragged = false;
                 if (HasAttachedEdgeWithGap)
                 {
                     GapDistance = CalculateGapDistance();
