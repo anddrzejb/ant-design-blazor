@@ -396,7 +396,8 @@ namespace AntDesign
                         }
                         if (attachedHandleNo == RangeEdge.Right)
                         {
-                            return _boundaries[id].rightNeighbour.RightValue - _boundaries[id].item.GapDistance; //in a gap situation, gap distance has to be accounted for
+                            //in a gap situation, gap distance has to be accounted for
+                            return _boundaries[id].rightNeighbour.RightValue - _boundaries[id].item.GapDistance; 
                         }
                     }
                     else
@@ -404,6 +405,12 @@ namespace AntDesign
                         if (attachedHandleNo == RangeEdge.Left)
                         {
                             return _boundaries[id].rightNeighbour.LeftValue;
+                        }
+                        else
+                        {
+                            //used only when range is dragged but 2 neighboring
+                            //edges are attached & first range is dragged
+                            return _boundaries[id].rightNeighbour.RightValue;
                         }
                     }
                 }

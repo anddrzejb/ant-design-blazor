@@ -39,15 +39,15 @@ namespace AntDesign
         double _distanceToLeftHandle;
         double _distanceToRightHandle;
 
+        internal bool HasAttachedEdge { get; set; }
 
-        private bool _hasAttachedEdge;
         internal bool HasAttachedEdgeWithGap
         {
             get => _hasAttachedEdgeWithGap;
             set
             {
                 _hasAttachedEdgeWithGap = value;
-                _hasAttachedEdge = value;
+                HasAttachedEdge = value;
 
             }
         }
@@ -421,7 +421,6 @@ namespace AntDesign
                 SetFocus(true);
                 Parent.SetRangeItemFocus(this, true);
             }
-            _mouseDownOnTrack = !Disabled;
             _initialLeftValue = _leftValue;
             _initialRightValue = _rightValue;
             _trackedClientX = args.ClientX;
@@ -435,11 +434,15 @@ namespace AntDesign
             }
 
             //evaluate clicked position in respect to each edge
+            _mouseDownOnTrack = !Disabled;
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
             double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
             _distanceToLeftHandle = clickedValue - LeftValue;
             _distanceToRightHandle = RightValue - clickedValue;
-            Console.WriteLine($"Range item clicked. Click value: {clickedValue}, distance to Left:Right {_distanceToLeftHandle}:{_distanceToRightHandle}");
+            if (HasAttachedEdge && !Master)
+            {
+                SetAsMaster();
+            }
         }
 
         private async Task<(double, double)> GetSliderDimensions(ElementReference reference)
@@ -456,11 +459,11 @@ namespace AntDesign
             if (_isFocused)
             {
                 _focusClass = $"{PreFixCls}-track-focus";
-                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
+                if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
                 {
                     _leftFocusZIndex = "z-index: 1000;"; //just below default overlay zindex
                 }
-                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
+                if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
                 {
                     _rightFocusZIndex = "z-index: 1000;";
                 }
@@ -468,11 +471,11 @@ namespace AntDesign
             else
             {
                 _focusClass = "";
-                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
+                if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
                 {
                     _leftFocusZIndex = "z-index: 900;";
                 }
-                if (!(_hasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
+                if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
                 {
                     _rightFocusZIndex = "z-index: 900;";
                 }
@@ -481,7 +484,7 @@ namespace AntDesign
 
         private void OnDoubleClick(RangeEdge handle)
         {
-            if (!_hasAttachedEdge)
+            if (!HasAttachedEdge)
             {
                 RangeItem overlappingEdgeCandidate = handle == RangeEdge.Left ? Parent.GetLeftNeighbour(Id) : Parent.GetRightNeighbour(Id);
                 if (overlappingEdgeCandidate is null && !Parent.AllowOverlapping) //will be null when there are no other items or edge is closes to either Min or Max
@@ -669,17 +672,24 @@ namespace AntDesign
         private void AttachOverlappingEdges(RangeEdge handle, RangeItem item)
         {
             AttachedItem = item;
-            _hasAttachedEdge = true;
+            HasAttachedEdge = true;
             AttachedHandleNo = handle;
             Master = true;
+
             AttachedItem.Slave = true;
+            AttachedItem.HasAttachedEdge = true;
+            AttachedItem.AttachedItem = this; //
+            AttachedItem.AttachedHandleNo = GetOppositeEdge(handle);
+
             if (handle == RangeEdge.Left)
             {
                 ChangeAttachedItem = () => AttachedItem.RightValue = this.LeftValue;
+                AttachedItem.ChangeAttachedItem = () => this.LeftValue = AttachedItem.RightValue;
             }
             else
             {
                 ChangeAttachedItem = () => AttachedItem.LeftValue = this.RightValue;
+                AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue;
             }
             SetLockEdgeStyle(handle, true);
         }
@@ -738,7 +748,7 @@ namespace AntDesign
 
         private void ResetAttached(bool forceReset = false)
         {
-            if (!_hasAttachedEdge && !forceReset)
+            if (!HasAttachedEdge && !forceReset)
             {
                 return;
             }
@@ -762,8 +772,15 @@ namespace AntDesign
                 }
                 ResetLockEdgeStyle(false);
                 Master = false;
+                AttachedItem.Slave = false;
+                AttachedItem.HasAttachedEdge = false;
+                AttachedItem.AttachedItem = null; //
+                AttachedItem.AttachedHandleNo = 0;
+                AttachedItem.ChangeAttachedItem = default;
+
                 AttachedItem = default;
                 AttachedHandleNo = 0;
+
                 ChangeAttachedItem = default;
             }
             SetFocus(_isFocused);
@@ -813,11 +830,16 @@ namespace AntDesign
             }
             if (HasAttachedEdgeWithGap && !Master)
             {
-                Master = true;
-                Slave = false;
-                AttachedItem.Master = false;
-                AttachedItem.Slave = true;
+                SetAsMaster();
             }
+        }
+
+        private void SetAsMaster()
+        {
+            Master = true;
+            Slave = false;
+            AttachedItem.Master = false;
+            AttachedItem.Slave = true;
         }
 
         private bool IsMoveInEdgeBoundary(JsonElement jsonElement)
@@ -842,9 +864,10 @@ namespace AntDesign
             {
                 _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
                 _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
-                await CalculateValuesAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble());
-
-                OnChange?.Invoke(CurrentValue);
+                if (await CalculateValuesAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble()))
+                {
+                    OnChange?.Invoke(CurrentValue);
+                }
             }
         }
 
@@ -891,46 +914,100 @@ namespace AntDesign
         private async Task CalculateValueAsync(double clickClient)
         {
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
+            bool hasChanged;
             if (_right)
             {
-                await ProcessNewRightValue(clickClient, sliderOffset, sliderLength);
+                double rightV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
+                hasChanged = await HasValueChanged(ref _rightValue, () => ProcessNewLeftValue(rightV));
             }
             else
             {
-                await ProcessNewLeftValue(clickClient, sliderOffset, sliderLength);
+                double leftV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
+                hasChanged = await HasValueChanged(ref _leftValue, () => ProcessNewLeftValue(leftV));
             }
-            ChangeAttachedItem?.Invoke();
+            if (hasChanged)
+            {
+                ChangeAttachedItem?.Invoke();
+            }
         }
 
-        private async Task CalculateValuesAsync(double clickClient)
+        private async Task<bool> CalculateValuesAsync(double clickClient)
         {
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
 
             double dragPosition = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
             double rightV = dragPosition + _distanceToRightHandle;
             double leftV = dragPosition - _distanceToLeftHandle;
-            //evaluate if both rightV & leftV are within acceptable values
-            double rightCandidate = Clamp(rightV, Parent.GetLeftBoundary(Id, RangeEdge.Right, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Right, AttachedHandleNo));
-            double leftCandidate = Clamp(leftV, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
-            if (leftCandidate != LeftValue && rightCandidate != RightValue)
+            if (rightV - leftV != RightValue - LeftValue)
             {
-                ChangeLeftValue(leftCandidate, LeftValue);
-                ChangeRightValue(rightCandidate, RightValue);
+                //movement is shrinking the range, abort
+                return false;
             }
-
+            if (HasAttachedEdge)
+            {
+                return await CalculateValuesWithAttachedEdgesAsync(rightV, leftV);
+            }
+            else
+            {
+                //evaluate if both rightV & leftV are within acceptable values
+                double rightCandidate = Clamp(rightV, Parent.GetLeftBoundary(Id, RangeEdge.Right, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Right, AttachedHandleNo));
+                double leftCandidate = Clamp(leftV, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
+                if (leftCandidate != LeftValue && rightCandidate != RightValue)
+                {
+                    ChangeLeftValue(leftCandidate, LeftValue);
+                    ChangeRightValue(rightCandidate, RightValue);
+                    return true;
+                }
+            }
+            return false;
         }
 
-        private async Task ProcessNewRightValue(double clickClient, double sliderOffset, double sliderLength)
+        private async Task<bool> CalculateValuesWithAttachedEdgesAsync(double rightV, double leftV)
         {
-            double rightV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
+            bool hasChanged = false;
+            if (AttachedHandleNo == RangeEdge.Left)
+            {
+                hasChanged = await HasValueChanged(ref _leftValue, () => ProcessNewLeftValue(leftV));
+            }
+            else
+            {
+                hasChanged = await HasValueChanged(ref _rightValue, () => ProcessNewRightValue(rightV));
+            }
+
+            if (hasChanged)
+            {
+                if (AttachedHandleNo == RangeEdge.Left)
+                {
+                    await ProcessNewRightValue(rightV);
+                }
+                else
+                {
+                    await ProcessNewLeftValue(leftV);
+                }
+                ChangeAttachedItem?.Invoke();
+            }
+            return true;
+        }
+
+        private Task<bool> HasValueChanged(ref double value, Func<Task> predicate)
+        {
+            double valueB4Change = value;
+            predicate.Invoke();
+            double newValue = value;
+            return Task.FromResult(valueB4Change != newValue);
+        }
+
+        private async Task ProcessNewRightValue(double rightV)
+        {
+            //double rightV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
             if (rightV < LeftValue)
             {
-                if (Parent.AllowOverlapping && _hasAttachedEdge) //push
+                if (Parent.AllowOverlapping && HasAttachedEdge) //push
                 {
                     RightValue = rightV;
                     LeftValue = rightV;
                 }
-                else if (!_hasAttachedEdge) //do not allow switching if locked with another range item
+                else if (!HasAttachedEdge) //do not allow switching if locked with another range item
                 {
                     _right = false;
                     if (_mouseDown)
@@ -950,17 +1027,16 @@ namespace AntDesign
             }
         }
 
-        private async Task ProcessNewLeftValue(double clickClient, double sliderOffset, double sliderLength)
+        private async Task ProcessNewLeftValue(double leftV)
         {
-            double leftV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
             if (leftV > RightValue)
             {
-                if (Parent.AllowOverlapping && _hasAttachedEdge) //push
+                if (Parent.AllowOverlapping && HasAttachedEdge) //push
                 {
                     RightValue = leftV;
                     LeftValue = leftV;
                 }
-                else if (!_hasAttachedEdge) //do not allow switching if locked with another range item
+                else if (!HasAttachedEdge) //do not allow switching if locked with another range item
                 {
                     _right = true;
                     if (_mouseDown)
@@ -1066,11 +1142,6 @@ namespace AntDesign
         {
             base.OnValueChange(value);
 
-            //if (!_hasAttachedEdge && IsLeftAndRightChanged(value))
-            //{
-            //    _leftValue = double.MinValue;
-            //    _rightValue = double.MaxValue;
-            //}
             if (LeftValue != value.Item1)
             {
                 LeftValue = value.Item1;
