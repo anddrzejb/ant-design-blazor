@@ -34,7 +34,7 @@ namespace AntDesign
         private Tooltip _toolTipLeft;
 
         /// <summary>
-        /// Used to figure out how much to move left & right when range is moved
+        /// Used to figure out how much to move left and right when range is moved
         /// </summary>
         double _distanceToLeftHandle;
         double _distanceToRightHandle;
@@ -80,10 +80,6 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
-                        //if (Parent.Oversized)
-                        //{
-                        //    return "top: auto; bottom: calc({0} - 7px); transform: translateY(50%);";
-                        //}
                         return "top: auto; bottom: {0}; transform: translateY(50%);";
                     }
                     else
@@ -113,10 +109,6 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
-                        //if (Parent.Oversized)
-                        //{
-                        //    return "top: auto; bottom: calc({0} - 7px); transform: translateY(50%);";
-                        //}
                         return "top: auto; bottom: {0}; transform: translateY(50%);";
                     }
                     else
@@ -146,10 +138,6 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
-                        //if (Parent.Oversized)
-                        //{
-                        //    return "top: auto; height: {1}; bottom: calc({0} - 7px);";
-                        //}
                         return "top: auto; height: {1}; bottom: {0};";
                     }
                     else
@@ -447,7 +435,6 @@ namespace AntDesign
             }
 
             //evaluate clicked position in respect to each edge
-            //(double sliderOffset, double sliderLength) = await GetSliderDimensions(Ref);
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
             double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
             _distanceToLeftHandle = clickedValue - LeftValue;
@@ -762,7 +749,7 @@ namespace AntDesign
                 Parent.ItemRequestingAttach = null;
                 ResetNotOverlapping(Parent.ItemRespondingToAttach, Id);
                 Parent.ItemRespondingToAttach = null;
-                //resort, because order could have been altered
+                //re-sort, because order could have been altered
                 //and proper order is needed to pick-up attaching on 
                 //overlapping edges
                 Parent.SortRangeItems();
@@ -903,7 +890,6 @@ namespace AntDesign
 
         private async Task CalculateValueAsync(double clickClient)
         {
-            //_railRef
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
             if (_right)
             {
@@ -918,10 +904,6 @@ namespace AntDesign
 
         private async Task CalculateValuesAsync(double clickClient)
         {
-            //_sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
-            //double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
-            //double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
-            //(double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent.Ref);
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
 
             double dragPosition = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
@@ -1061,11 +1043,11 @@ namespace AntDesign
             string rightHandStyle;
             string leftHandStyle;
             string trackHeight;
+            //TODO: consider using delegates
             if (Parent.Vertical && Parent.Oversized)
             {
                 rightHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(rightHandPercentage);
                 leftHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage);
-                //trackHeight = Parent.GetOversizedVerticalTrackSize((RightValue - LeftValue) / Parent.MinMaxDelta);
                 trackHeight = MultiRangeSlider.GetOversizedVerticalTrackSize(leftHandPercentage, rightHandPercentage);
             }
             else

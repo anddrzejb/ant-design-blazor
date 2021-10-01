@@ -10,11 +10,12 @@ namespace AntDesign
 {
     public partial class MultiRangeSlider : AntInputComponentBase<IEnumerable<(double, double)>>
     {
-        internal const int VerticalOversizedTrackAdjust = 7;
+        internal const int VerticalOversizedTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isAtfterFirstRender = false;
         private string _overflow = "display: inline;";
         private string _sizeType = "width";
+        private string _railStyle = "";
         private bool _oversized;
         internal ElementReference _railRef;
         internal RangeItem ItemRequestingAttach { get; set; }
@@ -52,10 +53,12 @@ namespace AntDesign
                 if (Oversized)
                 {
                     _overflow = "overflow-y: auto;overflow-x: hidden; padding-right: 8px; height: inherit;";
+                    _railStyle = $"height: calc(100% - {2 * VerticalOversizedTrackAdjust}px);top: {VerticalOversizedTrackAdjust}px;";
                 }
                 else
                 {
                     _overflow = "display: inline;";
+                    _railStyle = "";
                 }
                 _sizeType = "height";
             }
@@ -68,9 +71,10 @@ namespace AntDesign
                 else
                 {
                     _overflow = "display: inline;";
-                }                
+                }
                 _sizeType = "width";
-            }            
+                _railStyle = "";
+            }
         }
 
         /// <summary>
@@ -529,19 +533,8 @@ namespace AntDesign
             if (Vertical && Oversized)
             {
                 return GetOversizedVerticalCoordinate((key - Min) / MinMaxDelta);
-                //return $"calc({Formatter.ToPercentWithoutBlank((key - Min) / MinMaxDelta)} - 7px)";
             }
             return Formatter.ToPercentWithoutBlank((key - Min) / MinMaxDelta);
-        }
-
-        private string IsActiveMark(double key)
-        {
-            //TODO: should probably behave differently when multiple range items exists
-            //    bool active = (Range && key >= LeftValue && key <= RightValue)
-            //        || (!Range && key <= RightValue);
-
-            //    return active ? "ant-multi-range-slider-dot-active" : string.Empty;
-            return String.Empty;
         }
 
         private string _trackSize = "";
@@ -554,7 +547,7 @@ namespace AntDesign
             }
             else
             {
-                return $"{_sizeType}: {((Max - Min) / (VisibleMax - VisibleMin)) * 100}%";
+                return $"{_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%";
             }
         }
 
@@ -577,12 +570,43 @@ namespace AntDesign
             }
         }
 
+        /// <summary>
+        /// When MultiRangeSlider is Vertical and is Oversized, special calculations are made, 
+        /// there is a visual issue: Min and Max position are overflowing, so when an edge is set
+        /// in the Min/Max, half of the edge is not visible due to overflowing set to hidden.
+        /// 
+        /// Current solution: make track smaller by a <see cref="VerticalOversizedTrackAdjust">number of pixels</see>.
+        /// As a result, a relative calculation has to be performed to evaluate edge positions. 
+        /// </summary>
+        /// <param name="nominalPercentage">The percentage calculated for a point as it would be 
+        /// used without compensating for visual issue.
+        /// </param>
+        /// <returns>css calc formula</returns>
+        /// <see cref="GetOversizedVerticalTrackSize"/>
         internal static string GetOversizedVerticalCoordinate(double nominalPercentage)
         {
             var skew = GetOversizedVerticalSkew(nominalPercentage);
-            return $"calc({Formatter.ToPercentWithoutBlank(nominalPercentage)} - ({skew} * 7px))";
+            return $"calc({Formatter.ToPercentWithoutBlank(nominalPercentage)} - ({skew} * {VerticalOversizedTrackAdjust}px))";
         }
 
+        /// <summary>
+        /// When MultiRangeSlider is Vertical and is Oversized, special calculations are made, 
+        /// there is a visual issue: Min and Max position are overflowing, so when an edge is set
+        /// in the Min/Max, half of the edge is not visible due to overflowing set to hidden.
+        /// 
+        /// Calculates the percentage of <see cref="VerticalOversizedTrackAdjust">number of pixels</see>.
+        /// It will be applied to css calc formula.
+        /// </summary>
+        /// <param name="nominalPercentage">The percentage calculated for a point as it would be 
+        /// used without compensating for visual issue.
+        /// 
+        /// It is a "pendulum algorithm" (don't know if such algorithm exists and if yes is this the correct name). 
+        /// The logic here is that:
+        /// 1. Rail is a range from 0% to 100%. 
+        /// 2. Adjustment has to go from -100% at rail position = 0% to +100% at rail position = 100%. 
+        /// 3. So if calculated from 0% => -100%, 1% => -98%, 2% => -96%, ... 50% => 0%, ..., 99% => 98%, 100% => 100%
+        /// </param>
+        /// <returns>percentage as fraction</returns>
         private static double GetOversizedVerticalSkew(double nominalPercentage)
         {
             double skew;
@@ -598,24 +622,29 @@ namespace AntDesign
             return skew;
         }
 
+        /// <summary>
+        /// When MultiRangeSlider is Vertical and is Oversized, special calculations are made, 
+        /// there is a visual issue: Min and Max position are overflowing, so when an edge is set
+        /// in the Min/Max, half of the edge is not visible due to overflowing set to hidden.
+        /// 
+        /// Current solution: make track smaller by a <see cref="VerticalOversizedTrackAdjust">number of pixels</see>.
+        /// As a result, a relative calculation has to be performed to evaluate track size. 
+        /// </summary>
+        /// <param name="leftHandPercentage">The percentage calculated for the left edge as it would be 
+        /// used without compensating for visual issu.
+        /// </param>
+        /// <param name="rightHandPercentage">The percentage calculated for the right edge it would be 
+        /// used without compensating for visual issu.
+        /// </param>/// 
+        /// <returns>css calc formula</returns>
+        /// <see cref="GetOversizedVerticalCoordinate"/>
         internal static string GetOversizedVerticalTrackSize(double leftHandPercentage, double rightHandPercentage)
         {
-            //double skew;
-            //if (nominalPercentage < 50)
-            //{
-            //    skew = (2d * nominalPercentage) - 1d;
-            //}
-            //else
-            //{
-            //    skew = (nominalPercentage - 0.5d) * 2d;
-            //}
-            //nominalPercentage = nominalPercentage - 0.01;// + (skew / 100d);
-            //return $"calc({Formatter.ToPercentWithoutBlank(nominalPercentage)} - 1%  {skew})";
-            //return Formatter.ToPercentWithoutBlank(nominalPercentage);
             var skewLeft = GetOversizedVerticalSkew(leftHandPercentage);
             var skewRight = GetOversizedVerticalSkew(rightHandPercentage);
-            return $"calc(({Formatter.ToPercentWithoutBlank(rightHandPercentage)} - ({skewRight} * 7px)) - ({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - ({skewLeft} * 7px)))";
 
+            return $"calc(({Formatter.ToPercentWithoutBlank(rightHandPercentage)} - ({skewRight} * {VerticalOversizedTrackAdjust}px)) " +
+                   $"- ({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - ({skewLeft} * {VerticalOversizedTrackAdjust}px)))";
         }
 
     }

@@ -4,7 +4,7 @@
 <div style="@(_overflow)">
     <div class="@ClassMapper.Class" style="@(_trackSize + @Style)" id="@Id" @ref="Ref"
          @onmousedown="@OnMouseDown">
-        <div class="ant-multi-range-slider-rail" @ref=@_railRef style="@(Vertical && Oversized ? "height: calc(100% - 14px);top: 7px;" : "")">
+        <div class="ant-multi-range-slider-rail" @ref=@_railRef style="@_railStyle">
         </div>
     
         <div class="ant-multi-range-slider-step">
@@ -28,6 +28,7 @@
             }
             else
             {
+                @* //TODO: apply data source approach, test changing data source after initialization *@
                 <RangeItem DefaultValue="(20d, 50d)"/>
                 <RangeItem DefaultValue="(55d, 70d)"/>
                 <RangeItem DefaultValue="(75d, 100d)"/>
@@ -38,7 +39,10 @@
             {
                 @foreach (RangeItemMark mark in Marks)
                 {
-                    <span class="ant-multi-range-slider-mark-text ant-multi-range-slider-mark-text-active" style=@($"{(Vertical ? "bottom" : "left")}: {SetMarkPosition(mark.Key)}; {(Vertical ? "margin-bottom: -50%;" : "transform: translateX(-50%);")}" + mark.Style)>@mark.Value</span>
+                    <span class="ant-multi-range-slider-mark-text ant-multi-range-slider-mark-text-active" 
+                          style=@($"{(Vertical ? "bottom" : "left")}: {SetMarkPosition(mark.Key)}; {(Vertical ? "margin-bottom: -50%;" : "transform: translateX(-50%);")}" + mark.Style)>
+                          @mark.Value
+                    </span>
                 }
             }
         </div>
