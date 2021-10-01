@@ -145,11 +145,11 @@
     border-radius: 50%;
     cursor: pointer;
 
-    &-top {
+    &-first {
       top: -2px;
     } 
 
-    &-bottom {
+    &-second {
       top: 14px;
     }
 
@@ -198,6 +198,11 @@
 
     &-oversized {
       overflow: hidden;
+
+      &&.@{multi-range-slider-prefix-cls}-with-marks {
+        width: 100%;
+        padding-left: 2px;
+      }
     }
 
     .@{multi-range-slider-prefix-cls}-rail {
@@ -220,7 +225,7 @@
 
     .@{multi-range-slider-prefix-cls}-mark {
       top: 0;
-      left: 12px;
+      left: 24px;
       width: 18px;
       height: 100%;
     }
@@ -236,10 +241,26 @@
     }
 
     .@{multi-range-slider-prefix-cls}-dot {
-      top: auto;
-      left: 2px;
+      //top: 18px;      
+      top: -4px;      
       margin-bottom: -4px;
+
+      &-first {
+        left: 2px;
+      }
+
+      &-second {
+        left: 18px;
+      }
     }
+
+    .@{multi-range-slider-prefix-cls}-dot-line-dot {
+      margin-left: 4px;
+      position: absolute;
+      width: 12px;
+      margin-top: -1px;
+    }
+
   }
 
   &-tooltip {

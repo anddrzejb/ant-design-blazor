@@ -4,7 +4,7 @@
 <div style="@(_overflow)">
     <div class="@ClassMapper.Class" style="@(_trackSize + @Style)" id="@Id" @ref="Ref"
          @onmousedown="@OnMouseDown">
-        <div class="ant-multi-range-slider-rail">
+        <div class="ant-multi-range-slider-rail" @ref=@_railRef style="@(Vertical && Oversized ? "height: calc(100% - 14px);top: 7px;" : "")">
         </div>
     
         <div class="ant-multi-range-slider-step">
@@ -13,8 +13,8 @@
                 @foreach (RangeItemMark mark in Marks)
                 {
                     <span style="position: absolute;@($"{(Vertical ? "bottom" : "left")}: {SetMarkPosition(mark.Key)};")">
-                        <span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-top"></span>
-                        <span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-bottom"></span>
+                        <span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-first"></span>
+                        <span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-second"></span>
                         <span class="ant-multi-range-slider-dot-line-dot"></span>
                     </span>
                 }

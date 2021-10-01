@@ -80,6 +80,10 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
+                        //if (Parent.Oversized)
+                        //{
+                        //    return "top: auto; bottom: calc({0} - 7px); transform: translateY(50%);";
+                        //}
                         return "top: auto; bottom: {0}; transform: translateY(50%);";
                     }
                     else
@@ -109,6 +113,10 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
+                        //if (Parent.Oversized)
+                        //{
+                        //    return "top: auto; bottom: calc({0} - 7px); transform: translateY(50%);";
+                        //}
                         return "top: auto; bottom: {0}; transform: translateY(50%);";
                     }
                     else
@@ -138,6 +146,10 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
+                        //if (Parent.Oversized)
+                        //{
+                        //    return "top: auto; height: {1}; bottom: calc({0} - 7px);";
+                        //}
                         return "top: auto; height: {1}; bottom: {0};";
                     }
                     else
@@ -415,6 +427,7 @@ namespace AntDesign
 
         private async Task OnRangeItemClick(MouseEventArgs args)
         {
+            //TODO: allow dragging ranges when 2 items are attached 
             if (!_isFocused)
             {
                 SetFocus(true);
@@ -434,7 +447,8 @@ namespace AntDesign
             }
 
             //evaluate clicked position in respect to each edge
-            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Ref);
+            //(double sliderOffset, double sliderLength) = await GetSliderDimensions(Ref);
+            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
             double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
             _distanceToLeftHandle = clickedValue - LeftValue;
             _distanceToRightHandle = RightValue - clickedValue;
@@ -889,7 +903,8 @@ namespace AntDesign
 
         private async Task CalculateValueAsync(double clickClient)
         {
-            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent.Ref);
+            //_railRef
+            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
             if (_right)
             {
                 await ProcessNewRightValue(clickClient, sliderOffset, sliderLength);
@@ -903,9 +918,11 @@ namespace AntDesign
 
         private async Task CalculateValuesAsync(double clickClient)
         {
-            _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
-            double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
-            double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
+            //_sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, Ref);
+            //double sliderOffset = (double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft);
+            //double sliderLength = (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth);
+            //(double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent.Ref);
+            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
 
             double dragPosition = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
             double rightV = dragPosition + _distanceToRightHandle;
@@ -1041,18 +1058,25 @@ namespace AntDesign
         {
             var rightHandPercentage = (RightValue - Min) / Parent.MinMaxDelta;
             var leftHandPercentage = (LeftValue - Min) / Parent.MinMaxDelta;
-            //var skew = (20d / 600d);
-            //if (LeftValue != double.MinValue)
-            //{
-            //    leftHandPercentage -= skew;
-            //}
-            //if (RightValue != double.MaxValue)
-            //{
-            //    rightHandPercentage -= skew;
-            //}
-            _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, Formatter.ToPercentWithoutBlank(rightHandPercentage));
-            _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, Formatter.ToPercentWithoutBlank(leftHandPercentage), Formatter.ToPercentWithoutBlank((RightValue - LeftValue) / Parent.MinMaxDelta));
-            _leftHandleStyle = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, Formatter.ToPercentWithoutBlank(leftHandPercentage));
+            string rightHandStyle;
+            string leftHandStyle;
+            string trackHeight;
+            if (Parent.Vertical && Parent.Oversized)
+            {
+                rightHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(rightHandPercentage);
+                leftHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage);
+                //trackHeight = Parent.GetOversizedVerticalTrackSize((RightValue - LeftValue) / Parent.MinMaxDelta);
+                trackHeight = MultiRangeSlider.GetOversizedVerticalTrackSize(leftHandPercentage, rightHandPercentage);
+            }
+            else
+            {
+                rightHandStyle = Formatter.ToPercentWithoutBlank(rightHandPercentage);
+                leftHandStyle = Formatter.ToPercentWithoutBlank(leftHandPercentage);
+                trackHeight = Formatter.ToPercentWithoutBlank((RightValue - LeftValue) / Parent.MinMaxDelta);
+            }
+            _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, rightHandStyle);
+            _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, leftHandStyle, trackHeight);
+            _leftHandleStyle = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, leftHandStyle);
             StateHasChanged();
         }
 

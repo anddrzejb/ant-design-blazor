@@ -10,11 +10,13 @@ namespace AntDesign
 {
     public partial class MultiRangeSlider : AntInputComponentBase<IEnumerable<(double, double)>>
     {
+        internal const int VerticalOversizedTrackAdjust = 7;
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isAtfterFirstRender = false;
         private string _overflow = "display: inline;";
         private string _sizeType = "width";
         private bool _oversized;
+        internal ElementReference _railRef;
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
 
@@ -49,13 +51,12 @@ namespace AntDesign
                 //without padding, vertical scroll hides most of the rendered elements
                 if (Oversized)
                 {
-                    _overflow = "overflow-y: auto;padding-right: 8px; height: inherit; width: max-content";
+                    _overflow = "overflow-y: auto;overflow-x: hidden; padding-right: 8px; height: inherit;";
                 }
                 else
                 {
                     _overflow = "display: inline;";
                 }
-                //_orientationStyle = "margin-top: 7px; margin-bottom: 7px;";
                 _sizeType = "height";
             }
             else
@@ -67,11 +68,9 @@ namespace AntDesign
                 else
                 {
                     _overflow = "display: inline;";
-                }
-                //_orientationStyle = "";
+                }                
                 _sizeType = "width";
-            }
-            //Console.WriteLine($"SetOrientationStyles: {_overflow}, size: {_sizeType}");
+            }            
         }
 
         /// <summary>
@@ -527,6 +526,11 @@ namespace AntDesign
 
         private string SetMarkPosition(double key)
         {
+            if (Vertical && Oversized)
+            {
+                return GetOversizedVerticalCoordinate((key - Min) / MinMaxDelta);
+                //return $"calc({Formatter.ToPercentWithoutBlank((key - Min) / MinMaxDelta)} - 7px)";
+            }
             return Formatter.ToPercentWithoutBlank((key - Min) / MinMaxDelta);
         }
 
@@ -571,6 +575,47 @@ namespace AntDesign
             {
                 _focusedItem = null;
             }
+        }
+
+        internal static string GetOversizedVerticalCoordinate(double nominalPercentage)
+        {
+            var skew = GetOversizedVerticalSkew(nominalPercentage);
+            return $"calc({Formatter.ToPercentWithoutBlank(nominalPercentage)} - ({skew} * 7px))";
+        }
+
+        private static double GetOversizedVerticalSkew(double nominalPercentage)
+        {
+            double skew;
+            if (nominalPercentage < 50)
+            {
+                skew = (2d * nominalPercentage) - 1d;
+            }
+            else
+            {
+                skew = (nominalPercentage - 0.5d) * 2d;
+            }
+
+            return skew;
+        }
+
+        internal static string GetOversizedVerticalTrackSize(double leftHandPercentage, double rightHandPercentage)
+        {
+            //double skew;
+            //if (nominalPercentage < 50)
+            //{
+            //    skew = (2d * nominalPercentage) - 1d;
+            //}
+            //else
+            //{
+            //    skew = (nominalPercentage - 0.5d) * 2d;
+            //}
+            //nominalPercentage = nominalPercentage - 0.01;// + (skew / 100d);
+            //return $"calc({Formatter.ToPercentWithoutBlank(nominalPercentage)} - 1%  {skew})";
+            //return Formatter.ToPercentWithoutBlank(nominalPercentage);
+            var skewLeft = GetOversizedVerticalSkew(leftHandPercentage);
+            var skewRight = GetOversizedVerticalSkew(rightHandPercentage);
+            return $"calc(({Formatter.ToPercentWithoutBlank(rightHandPercentage)} - ({skewRight} * 7px)) - ({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - ({skewLeft} * 7px)))";
+
         }
 
     }
