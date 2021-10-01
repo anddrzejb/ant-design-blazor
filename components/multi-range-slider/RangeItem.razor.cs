@@ -69,7 +69,7 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
-                        return "bottom: auto; top: {0}; transform: translateY(-50%);";
+                        return "bottom: auto; top: {0};";
                     }
                     else
                     {
@@ -98,7 +98,7 @@ namespace AntDesign
                 {
                     if (Parent.Vertical)
                     {
-                        return "bottom: auto; top: {0}; transform: translateY(-50%);";
+                        return "bottom: auto; top: {0};";
                     }
                     else
                     {
@@ -918,7 +918,7 @@ namespace AntDesign
             if (_right)
             {
                 double rightV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
-                hasChanged = await HasValueChanged(ref _rightValue, () => ProcessNewLeftValue(rightV));
+                hasChanged = await HasValueChanged(ref _rightValue, () => ProcessNewRightValue(rightV));
             }
             else
             {

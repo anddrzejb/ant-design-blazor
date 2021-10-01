@@ -539,7 +539,16 @@ namespace AntDesign
         {
             if (Vertical && Oversized)
             {
+                if (Reverse)
+                {
+                    return GetOversizedVerticalCoordinate(1 - (key - Min) / MinMaxDelta);
+                }
                 return GetOversizedVerticalCoordinate((key - Min) / MinMaxDelta);
+            }
+            if (Reverse)
+            {
+                return Formatter.ToPercentWithoutBlank(1 - ((key - Min) / MinMaxDelta));
+
             }
             return Formatter.ToPercentWithoutBlank((key - Min) / MinMaxDelta);
         }
@@ -654,5 +663,6 @@ namespace AntDesign
                    $"- ({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - ({skewLeft} * {VerticalOversizedTrackAdjust}px)))";
         }
 
+        private string GetBasePosition() => Vertical ? "bottom" : "left";
     }
 }
