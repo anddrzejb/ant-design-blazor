@@ -12,6 +12,8 @@ namespace AntDesign
     public partial class MultiRangeSlider : AntInputComponentBase<IEnumerable<(double, double)>>
     {
         //TODO: performance - minimize re-renders
+
+
         //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
         //TODO: turn on/off overlapping live
         //TODO: switch between vertical & horizontal live (animation?)
@@ -40,6 +42,15 @@ namespace AntDesign
         /// </summary>
         [Parameter]
         public bool Disabled { get; set; }
+
+
+        /// <summary>
+        /// Useful only when <see cref="AllowOverlapping"/>is set to false.
+        /// Does not allow edges to meet, because treats equal edge values
+        /// as overlapping. 
+        /// </summary>
+        [Parameter]
+        public bool EqualIsOverlap { get; set; }
 
         /// <summary>
         /// If true, the slider will be vertical.
@@ -278,6 +289,7 @@ namespace AntDesign
             _trackSize = GetRangeFullSize();
         }
 
+        private double _boundaryAdjust = 0;
         protected override void OnParametersSet()
         {
             base.OnParametersSet();
@@ -293,6 +305,17 @@ namespace AntDesign
                 .If($"{PreFixCls}-rtl", () => RTL);
 
             SetOrientationStyles();
+            if (Step is not null)
+            {
+                if (EqualIsOverlap)
+                {
+                    _boundaryAdjust = Step.Value;
+                }
+                else
+                {
+                    _boundaryAdjust = 0;
+                }
+            }
         }
 
         private void ValidateParameter()
@@ -320,7 +343,7 @@ namespace AntDesign
             {
                 _isAtfterFirstRender = true;
                 SortRangeItems();
-            }            
+            }
         }
 
         private async void OnMouseDown(MouseEventArgs args)
@@ -374,7 +397,7 @@ namespace AntDesign
                 else
                 {
                     //for single edge, all except the closes to the Min
-                    return _boundaries[id].leftNeighbour.RightValue;
+                    return _boundaries[id].leftNeighbour.RightValue + _boundaryAdjust;
                 }
             }
             return Min;
@@ -428,7 +451,7 @@ namespace AntDesign
                 else
                 {
                     //for single edge, all except the closes to the Max
-                    return _boundaries[id].rightNeighbour.LeftValue;
+                    return _boundaries[id].rightNeighbour.LeftValue - _boundaryAdjust;
 
                 }
             }
