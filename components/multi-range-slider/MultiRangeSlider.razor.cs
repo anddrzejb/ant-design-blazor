@@ -1,11 +1,12 @@
 ﻿using AntDesign.Core.Helpers;
-using AntDesign.Core.Helpers;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.AspNetCore.Components.Web;
 using System.Linq;
 using System;
+using AntDesign.JsInterop;
+using System.Threading.Tasks;
 
 namespace AntDesign
 {
@@ -13,7 +14,7 @@ namespace AntDesign
     {
         //TODO: performance - minimize re-renders
 
-
+        //TODO: initialize component with edges attached or with single edge already initialized attaching
         //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
         //TODO: turn on/off overlapping live
         //TODO: switch between vertical & horizontal live (animation?)
@@ -22,6 +23,8 @@ namespace AntDesign
         //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
         //TODO: RangeItems should be customizable similarly to tags (visuals)
         //TODO: Before any move, execute a callback that will have the ability to stop the move (EventCallback<bool>)
+        //TODO: Styling - on hover should only highlight hovered range; continue highlighting the whole rail
+        //TODO: Usage in form
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         internal const int VerticalOversizedTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
@@ -31,6 +34,7 @@ namespace AntDesign
         private string _railStyle = "";
         private bool _oversized;
         internal ElementReference _railRef;
+        private ElementReference _scrollableAreaRef;
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
 
@@ -189,7 +193,6 @@ namespace AntDesign
             }
         }
 
-
         [Parameter]
         public double VisibleMin
         {
@@ -210,6 +213,7 @@ namespace AntDesign
                     }
                     Oversized = Min < _visibleMin || Max > _visibleMax;
                     SetOrientationStyles();
+                    _trackSize = GetRangeFullSize();
                 }
 
             }
@@ -234,6 +238,7 @@ namespace AntDesign
                     }
                     Oversized = Min < _visibleMin || Max > _visibleMax;
                     SetOrientationStyles();
+                    _trackSize = GetRangeFullSize();
                 }
             }
         }
@@ -344,6 +349,24 @@ namespace AntDesign
                 _isAtfterFirstRender = true;
                 SortRangeItems();
             }
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender && Oversized)
+            {
+                double x = 0, y = 0;
+                if (Vertical)
+                {
+                    y = VisibleMin / 100d;
+                }
+                else
+                {
+                    x = VisibleMin / 100d;
+                }
+                await JsInvokeAsync(JSInteropConstants.DomMainpulationHelper.ScrollToPoint, _scrollableAreaRef, x, y, true);
+            }
+            await base.OnAfterRenderAsync(firstRender);
         }
 
         private async void OnMouseDown(MouseEventArgs args)
@@ -593,7 +616,6 @@ namespace AntDesign
         private string _trackSize = "";
         private string GetRangeFullSize()
         {
-            //Console.WriteLine($"Min:{Min} Max:{Max} VisibleMin:{VisibleMin} VisibleMax:{VisibleMax}");
             if (Min >= VisibleMin && Max <= VisibleMax)
             {
                 return "";
