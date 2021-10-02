@@ -14,17 +14,16 @@ namespace AntDesign
     {
         //TODO: performance - minimize re-renders
 
-        //TODO: initialize component with edges attached or with single edge already initialized attaching
+        //TODO: add ability to have step value to extend 0.5 (example: when RightEdge = 10 and LeftEdge = 11, visually should be able to touch without overlapping, while RightEdge = 10 and LeftEdge = 10 would look like overlapping)
+        //TODO: test with other values than Min=0 & Max=100 (smaller & larger)
         //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
-        //TODO: turn on/off overlapping live
-        //TODO: switch between vertical & horizontal live (animation?)
-        //TODO: for oversized move scrollbar so the shown range if from VisibleMin to VisibleMax
-        //TODO: zoom in using VisibleMin / VisibleMax changed live
-        //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
-        //TODO: RangeItems should be customizable similarly to tags (visuals)
         //TODO: Before any move, execute a callback that will have the ability to stop the move (EventCallback<bool>)
+        //TODO: add event that will fire before and after attached item is selected and attached item pair is selected (the before event should have ability to cancel the attaching)
+        //TODO: RangeItems should be customizable similarly to tags (visuals)
+        //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
         //TODO: Styling - on hover should only highlight hovered range; continue highlighting the whole rail
         //TODO: Usage in form
+        //TODO: switch between vertical & horizontal live (animation?)
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         internal const int VerticalOversizedTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
@@ -37,6 +36,7 @@ namespace AntDesign
         private ElementReference _scrollableAreaRef;
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
+        internal bool HasAttachedEdges { get; set; }
 
         [Parameter]
         public bool AllowOverlapping { get; set; }
@@ -199,7 +199,6 @@ namespace AntDesign
             get => _visibleMin;
             set
             {
-                //TODO: apply also scroll-to to focus on selected area
                 var hasChanged = value != _visibleMin;
                 if (hasChanged)
                 {

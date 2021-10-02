@@ -39,7 +39,15 @@ namespace AntDesign
         double _distanceToLeftHandle;
         double _distanceToRightHandle;
         internal bool IsRangeDragged { get; set; }
-        internal bool HasAttachedEdge { get; set; }
+        internal bool HasAttachedEdge
+        {
+            get => _hasAttachedEdge;
+            set
+            {
+                _hasAttachedEdge = value;
+                Parent.HasAttachedEdges = value;
+            }
+        }
 
         internal bool HasAttachedEdgeWithGap
         {
@@ -394,7 +402,7 @@ namespace AntDesign
             {
                 DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
                 DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
-            }            
+            }
             base.OnAfterRender(firstRender);
         }
 
@@ -455,7 +463,7 @@ namespace AntDesign
         private async Task<(double, double)> GetSliderDimensions(ElementReference reference)
         {
             _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, reference);
-            return ((double)(Parent.Vertical ? _sliderDom.AbsoluteTop  : _sliderDom.AbsoluteLeft),
+            return ((double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft),
                     (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth));
 
         }
@@ -500,7 +508,7 @@ namespace AntDesign
                     return;
                 }
 
-                if (IsEdgeOverlapping(handle, overlappingEdgeCandidate)) 
+                if (IsEdgeOverlapping(handle, overlappingEdgeCandidate))
                 {
                     AttachOverlappingEdges(handle, overlappingEdgeCandidate);
                 }
@@ -513,7 +521,117 @@ namespace AntDesign
             ResetAttached();
         }
 
-        private void AttachNotOverlappingEdges(RangeEdge handle)
+        /// <summary>
+        /// Will attach 2 edges. If <see cref="MultiRangeSlider.AllowOverlapping"/> is set to false,
+        /// will only allow attaching neighboring edges.
+        /// </summary>
+        /// <param name="currentRangeEdge">Which edge of the current <see cref="RangeItem "/> needs to be attached.</param>
+        /// <param name="attachToRange">RangeItem that will be attached</param>
+        /// <param name="attachToRangeEdge">Which edge of the requested <see cref="RangeItem "/> needs to be attached.</param>
+        /// <param name="detachExisting">Whether to detach if already attached</param>
+        /// <returns>Whether attaching was successful. Returns false if attachment already exists.</returns>
+        public bool AttachEdges(RangeEdge currentRangeEdge, RangeItem attachToRange, RangeEdge attachToRangeEdge, bool detachExisting = false)
+        {
+            if (Parent.HasAttachedEdges)
+            {
+                if (!detachExisting)
+                {
+                    return false;
+                }
+                else if (AttachedItem is not null && AttachedItem.Id == attachToRange.Id && AttachedHandleNo == currentRangeEdge && AttachedItem.AttachedHandleNo == attachToRangeEdge)
+                {
+                    return true; //are already attached
+                }
+                ResetAttached(true);
+            }
+            var currentRangeAttachResult = AttachFirstNotOverlappingEdge(currentRangeEdge);
+            if (!currentRangeAttachResult)
+            {
+                return false;
+            }
+            attachToRange.AttachNotOverlappingEdges(attachToRangeEdge);
+
+            return attachToRange.HasAttachedEdge;
+        }
+
+        /// <summary>
+        /// Will initiate attaching. Same as double clicking on an edge (that is not overlapping
+        /// with another edge).
+        /// </summary>
+        /// <param name="currentRangeEdge">Which edge of the current <see cref="RangeItem "/> needs to be attached.</param>
+        /// <param name="detachExisting">Whether to detach if already attached</param>
+        /// <returns>Whether attaching was successful.</returns>
+        public bool AttachSingle(RangeEdge currentRangeEdge, bool detachExisting = false)
+        {
+            if (Parent.HasAttachedEdges)
+            {
+                if (!detachExisting)
+                {
+                    return false;
+                }
+                ResetAttached(true);
+            }
+
+            return AttachNotOverlappingEdges(currentRangeEdge, false);
+        }
+
+        /// <summary>
+        /// Will attach overlapping edges. Same as double clicking on overlapping edges.
+        /// </summary>
+        /// <param name="currentRangeEdge">Which edge of the current <see cref="RangeItem "/> needs to be attached.</param>
+        /// <param name="detachExisting">Whether to detach if already attached</param>
+        /// <returns>Whether attaching was successful. Returns true if already attached.</returns>
+        public bool AttachOverlappingEdges(RangeEdge currentRangeEdge, bool detachExisting = false)
+        {
+            if (Parent.HasAttachedEdges)
+            {
+                if (!detachExisting)
+                {
+                    return false;
+                }
+            }
+
+            RangeItem overlappingEdgeCandidate = currentRangeEdge == RangeEdge.Left ? Parent.GetLeftNeighbour(Id) : Parent.GetRightNeighbour(Id);
+            if (overlappingEdgeCandidate is null) //will be null when there are no other items or edge is closes to either Min or Max
+            {
+                return false;
+            }
+            if (Parent.HasAttachedEdges &&
+                (
+                    Parent.ItemRequestingAttach.Id == overlappingEdgeCandidate.Id
+                    ||
+                    Parent.ItemRespondingToAttach.Id == overlappingEdgeCandidate.Id
+                ))
+            {
+                return true; //is already attached
+            }
+            else
+            {
+                ResetAttached(true);
+            }
+
+            if (IsEdgeOverlapping(currentRangeEdge, overlappingEdgeCandidate))
+            {
+                AttachOverlappingEdges(currentRangeEdge, overlappingEdgeCandidate);
+            }
+            return HasAttachedEdge;
+        }
+
+        /// <summary>
+        /// Detaches edge.
+        /// </summary>        
+        /// <returns>Whether detachment was successful. Returns true if no attachment existed.</returns>
+        public bool DetachEdges()
+        {
+            if (Parent.HasAttachedEdges)
+            {
+                ResetAttached();
+                return true;
+            }
+            return false;
+        }
+
+        internal bool AttachNotOverlappingEdges(RangeEdge handle, bool detachExisting = true)
         {
             if (!AttachFirstNotOverlappingEdge(handle))
             {
@@ -524,9 +642,10 @@ namespace AntDesign
                         AttachSecondNotOverlappingEdge(handle,
                             handle == Parent.ItemRequestingAttach.HandleNoRequestingAttaching);
                     }
-                    else
+                    else if (detachExisting)
                     {
                         ResetAttached(true);
+                        return false;
                     }
                 }
                 else
@@ -535,12 +654,14 @@ namespace AntDesign
                     {
                         AttachSecondNotOverlappingEdge(handle);
                     }
-                    else
+                    else if (detachExisting)
                     {
                         ResetAttached(true);
+                        return false;
                     }
                 }
             }
+            return true;
         }
 
         private bool AttachFirstNotOverlappingEdge(RangeEdge handle)
@@ -687,6 +808,9 @@ namespace AntDesign
             AttachedItem.HasAttachedEdge = true;
             AttachedItem.AttachedItem = this; //
             AttachedItem.AttachedHandleNo = GetOppositeEdge(handle);
+
+            Parent.ItemRequestingAttach = this;
+            Parent.ItemRespondingToAttach = AttachedItem;
 
             if (handle == RangeEdge.Left)
             {
@@ -1177,8 +1301,9 @@ namespace AntDesign
         }
 
         private (double, double) _value;
-        private MultiRangeSlider _parent;        
+        private MultiRangeSlider _parent;
         private bool _hasAttachedEdgeWithGap;
+        private bool _hasAttachedEdge;
 
         /// <summary>
         /// Gets or sets the value of the input. This should be used with two-way binding.
