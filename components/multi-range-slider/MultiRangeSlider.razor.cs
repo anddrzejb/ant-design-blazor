@@ -1,4 +1,5 @@
 ﻿using AntDesign.Core.Helpers;
+using AntDesign.Core.Helpers;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Generic;
 using System.Globalization;
@@ -319,7 +320,7 @@ namespace AntDesign
             {
                 _isAtfterFirstRender = true;
                 SortRangeItems();
-            }
+            }            
         }
 
         private async void OnMouseDown(MouseEventArgs args)

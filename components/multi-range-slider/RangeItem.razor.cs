@@ -334,6 +334,16 @@ namespace AntDesign
             Parent.AddRangeItem(this);
             SetStyle();
         }
+        private bool _shouldRender = true;
+        protected override bool ShouldRender()
+        {
+            if (!_shouldRender)
+            {
+                _shouldRender = true;
+                return false;
+            }
+            return base.ShouldRender();
+        }
 
         public override Task SetParametersAsync(ParameterView parameters)
         {
@@ -384,8 +394,7 @@ namespace AntDesign
             {
                 DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
                 DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
-            }
-
+            }            
             base.OnAfterRender(firstRender);
         }
 
@@ -414,7 +423,6 @@ namespace AntDesign
 
         private async Task OnRangeItemClick(MouseEventArgs args)
         {
-            //TODO: allow dragging ranges when 2 items are attached 
             if (!_isFocused)
             {
                 SetFocus(true);
@@ -712,6 +720,7 @@ namespace AntDesign
             {
                 ApplyLockEdgeStyle(locked, ref _attachedRightHandleClass, ref _rightHandleFill, ref _rightFocusZIndex);
             }
+            _shouldRender = true;
             if (requestStateChange)
             {
                 StateHasChanged();
@@ -735,6 +744,7 @@ namespace AntDesign
 
         internal void ResetLockEdgeStyle(bool requestStateChange)
         {
+            _shouldRender = true;
             _attachedLeftHandleClass = "";
             _attachedRightHandleClass = "";
             _leftHandleFill = null;
@@ -853,26 +863,33 @@ namespace AntDesign
         {
             if (_mouseDown)
             {
-                _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
-                _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
-                await CalculateValueAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble());
-
-                OnChange?.Invoke(CurrentValue);
+                await ApplyMouseMove(jsonElement, CalculateValueAsync);
             }
             if (_mouseDownOnTrack)
             {
                 IsRangeDragged = true;
-                _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
-                _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
-                if (await CalculateValuesAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble()))
-                {
-                    OnChange?.Invoke(CurrentValue);
-                }
+                await ApplyMouseMove(jsonElement, CalculateValuesAsync);
+            }
+        }
+
+        private async Task ApplyMouseMove(JsonElement jsonElement, Func<double, Task<bool>> predicate)
+        {
+            _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
+            _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
+            double clickPosition = Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble();
+            if (await predicate(clickPosition))
+            {
+                OnChange?.Invoke(CurrentValue);
+            }
+            else
+            {
+                _shouldRender = false;
             }
         }
 
         private async void OnMouseUp(JsonElement jsonElement)
         {
+            _shouldRender = true;
             bool isMoveInEdgeBoundary = IsMoveInEdgeBoundary(jsonElement);
             if (_mouseDown)
             {
@@ -912,7 +929,7 @@ namespace AntDesign
             _initialRightValue = _rightValue;
         }
 
-        private async Task CalculateValueAsync(double clickClient)
+        private async Task<bool> CalculateValueAsync(double clickClient)
         {
             (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
             bool hasChanged;
@@ -930,6 +947,7 @@ namespace AntDesign
             {
                 ChangeAttachedItem?.Invoke();
             }
+            return hasChanged;
         }
 
         private async Task<bool> CalculateValuesAsync(double clickClient)
