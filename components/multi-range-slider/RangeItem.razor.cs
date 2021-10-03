@@ -1261,24 +1261,43 @@ namespace AntDesign
             var leftHandPercentage = (LeftValue - Min) / Parent.MinMaxDelta;
             string rightHandStyle;
             string leftHandStyle;
-            string trackHeight;
+            string trackStart;
+            string trackSize;
+            double trackStartAdjust = 0;
+            double trackSizeAdjust = 0;
+            if (LeftValue != Min)
+            {
+                trackStartAdjust = Parent.ItemAdjust;
+                trackSizeAdjust = Parent.ItemAdjust;
+            }
+            if (RightValue != Max)
+            {
+                trackSizeAdjust += Parent.ItemAdjust;
+            }
+
             //TODO: consider using delegates
-            if (Parent.Vertical && Parent.Oversized)
+            if (Parent.Vertical)
             {
                 rightHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(rightHandPercentage);
                 leftHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage);
-                trackHeight = MultiRangeSlider.GetOversizedVerticalTrackSize(leftHandPercentage, rightHandPercentage);
+                //trackStart = leftHandStyle;
+                trackStart = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage - trackStartAdjust);
+                trackSize = MultiRangeSlider.GetOversizedVerticalTrackSize(leftHandPercentage - trackStartAdjust, rightHandPercentage + (trackSizeAdjust - trackStartAdjust));
             }
             else
             {
                 rightHandStyle = Formatter.ToPercentWithoutBlank(rightHandPercentage);
                 leftHandStyle = Formatter.ToPercentWithoutBlank(leftHandPercentage);
-                trackHeight = Formatter.ToPercentWithoutBlank((RightValue - LeftValue) / Parent.MinMaxDelta);
+                trackStart = Formatter.ToPercentWithoutBlank(leftHandPercentage - trackStartAdjust);
+                //trackStart = $"calc({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - {Formatter.ToPercentWithoutBlank(trackStartAdjust)})";
+                trackSize = Formatter.ToPercentWithoutBlank(((RightValue - LeftValue) / Parent.MinMaxDelta) + trackSizeAdjust);
+                //trackSize = $"calc({Formatter.ToPercentWithoutBlank((RightValue - LeftValue) / Parent.MinMaxDelta)} + {Formatter.ToPercentWithoutBlank(trackSizeAdjust)})";
             }
             _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, rightHandStyle);
-            _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, leftHandStyle, trackHeight);
+            _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, trackStart, trackSize);
             _leftHandleStyle = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, leftHandStyle);
             StateHasChanged();
+
         }
 
         protected override void OnValueChange((double, double) value)

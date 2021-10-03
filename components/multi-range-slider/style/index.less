@@ -22,7 +22,7 @@
   .range-vertical();
 
   &-with-marks {
-    margin-bottom: 28px;
+    margin-bottom: 38px;
   }
 
   &-rail {
@@ -165,7 +165,7 @@
   }
 
   &-dot-line-dot {
-    border: 1px solid @slider-dot-border-color-active;
+    border: 1px solid @text-color-secondary; //@slider-dot-border-color-active;
     margin-left: -1px;
     display: inline-block;
     height: 20px;
@@ -198,14 +198,17 @@
   &-vertical {
     width: 25px;
     height: 100%;
+    overflow: hidden;
+
+    &&.@{multi-range-slider-prefix-cls}-with-marks {
+      width: 100%;
+      //padding-left: 2px;
+    }
 
     &-oversized {
-      overflow: hidden;
+      
 
-      &&.@{multi-range-slider-prefix-cls}-with-marks {
-        width: 100%;
-        padding-left: 2px;
-      }
+
     }
 
     .@{multi-range-slider-prefix-cls}-rail {

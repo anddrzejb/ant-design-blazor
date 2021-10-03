@@ -31,12 +31,17 @@ namespace AntDesign
         private string _overflow = "display: inline;";
         private string _sizeType = "width";
         private string _railStyle = "";
+        private double _boundaryAdjust = 0;
+        //private double _itemAdjust = 0; //
         private bool _oversized;
         internal ElementReference _railRef;
         private ElementReference _scrollableAreaRef;
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
         internal bool HasAttachedEdges { get; set; }
+        internal double MinMaxDelta => Max - Min;
+        internal bool Oversized { get => _oversized; set => _oversized = value; }
+        internal double ItemAdjust { get; private set; }
 
         [Parameter]
         public bool AllowOverlapping { get; set; }
@@ -47,6 +52,24 @@ namespace AntDesign
         [Parameter]
         public bool Disabled { get; set; }
 
+        private bool _expandStepHasChanged;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Parameter]
+        public bool ExpandStep
+        {
+            get => _expandStep; 
+            set
+            {
+
+                if (_expandStep != value)
+                {
+                    _expandStepHasChanged = true;
+                    _expandStep = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Useful only when <see cref="AllowOverlapping"/>is set to false.
@@ -79,13 +102,14 @@ namespace AntDesign
                 if (Oversized)
                 {
                     _overflow = "overflow-y: auto;overflow-x: hidden; padding-right: 8px; height: inherit;";
-                    _railStyle = $"height: calc(100% - {2 * VerticalOversizedTrackAdjust}px);top: {VerticalOversizedTrackAdjust}px;";
+//                    _railStyle = $"height: calc(100% - {2 * VerticalOversizedTrackAdjust}px);top: {VerticalOversizedTrackAdjust}px;";
                 }
                 else
                 {
                     _overflow = "display: inline;";
-                    _railStyle = "";
+//                    _railStyle = "";
                 }
+                _railStyle = $"height: calc(100% - {2 * VerticalOversizedTrackAdjust}px);top: {VerticalOversizedTrackAdjust}px;";
                 _sizeType = "height";
             }
             else
@@ -293,7 +317,6 @@ namespace AntDesign
             _trackSize = GetRangeFullSize();
         }
 
-        private double _boundaryAdjust = 0;
         protected override void OnParametersSet()
         {
             base.OnParametersSet();
@@ -318,6 +341,17 @@ namespace AntDesign
                 else
                 {
                     _boundaryAdjust = 0;
+                }
+            }
+            if (_expandStepHasChanged && Step is not null)
+            {
+                if (ExpandStep)
+                {
+                    ItemAdjust = (Step.Value / (Max - Min)) / 2d;
+                }
+                else
+                {
+                    ItemAdjust = 0;
                 }
             }
         }
@@ -453,7 +487,7 @@ namespace AntDesign
                         if (attachedHandleNo == RangeEdge.Right)
                         {
                             //in a gap situation, gap distance has to be accounted for
-                            return _boundaries[id].rightNeighbour.RightValue - _boundaries[id].item.GapDistance; 
+                            return _boundaries[id].rightNeighbour.RightValue - _boundaries[id].item.GapDistance;
                         }
                     }
                     else
@@ -591,12 +625,9 @@ namespace AntDesign
             }
         }
 
-        internal double MinMaxDelta => Max - Min;
-        internal bool Oversized { get => _oversized; set => _oversized = value; }
-
         private string SetMarkPosition(double key)
         {
-            if (Vertical && Oversized)
+            if (Vertical)
             {
                 if (Reverse)
                 {
@@ -621,12 +652,13 @@ namespace AntDesign
             }
             else
             {
-                return $"{_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%";
+                return $"{_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%;";
             }
         }
 
         private RangeItem _focusedItem;
         private bool _vertical;
+        private bool _expandStep;
 
         internal void SetRangeItemFocus(RangeItem item, bool isFocused)
         {
