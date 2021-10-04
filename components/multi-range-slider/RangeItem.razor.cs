@@ -41,6 +41,7 @@ namespace AntDesign
         private string _customDescriptionStyle = "";
         private string _customFocusStyle = "";
         private string _focusStyle = "";
+        private string _customEdgeBorderStyle = "";
 
 
         /// <summary>
@@ -385,6 +386,7 @@ namespace AntDesign
                 {
                     _customStyleChange = true;
                     _fontColorAsString = GetColorStyle(value, "color");
+                    _fontColor = value;
                 }
             }
         }
@@ -401,6 +403,7 @@ namespace AntDesign
                 {
                     _customStyleChange = true;
                     _colorAsString = GetColorStyle(value, "background-color");
+                    _color = value;
                 }
             }
         }
@@ -418,6 +421,7 @@ namespace AntDesign
                 {
                     _customStyleChange = true;
                     _focusColorAsString = GetColorStyle(value, "background-color");
+                    _focusColor = value;
                 }
             }
         }
@@ -435,6 +439,7 @@ namespace AntDesign
                 {
                     _customStyleChange = true;
                     _focusBorderColorAsString = GetColorStyle(value, "border-color");
+                    _focusBorderColor = value;
                 }
             }
         }
@@ -525,10 +530,13 @@ namespace AntDesign
                 if (string.IsNullOrWhiteSpace(Color.Value.ToString()))
                 {
                     _customTrackStyle = "";
+                    _customEdgeBorderStyle = "";
                 }
                 else
                 {
                     _customTrackStyle = _colorAsString;
+                    _customEdgeBorderStyle = GetColorStyle(_color, "border-color");
+                    DebugHelper.WriteLine($"_customTrackStyle: {_customTrackStyle}, _customEdgeBorderStyle: {_customEdgeBorderStyle}");
                 }
                 _focusStyle = _customTrackStyle;
                 if (!string.IsNullOrWhiteSpace(FocusColor.Value.ToString()) || !string.IsNullOrWhiteSpace(FocusBorderColor.Value.ToString()))
