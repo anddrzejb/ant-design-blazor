@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -431,6 +432,112 @@ namespace AntDesign
             DomEventListener.Dispose();
             Parent.RemoveRangeItem(this);
             base.Dispose(disposing);
+        }
+
+        private async Task OnKeyDown(KeyboardEventArgs e, RangeEdge handle)
+        {
+            if (e == null) throw new ArgumentNullException(nameof(e));
+            var key = e.Key.ToUpperInvariant();
+            double modifier = 0;
+            if (Parent.Vertical)
+            {
+                if (key == "ARROWUP")
+                {
+                    modifier = 1;
+                }
+                if (key == "ARROWDOWN")
+                {
+                    modifier = -1;
+                }
+            }
+            else
+            {
+                if (key == "ARROWLEFT")
+                {
+                    modifier = -1;
+                }
+                if (key == "ARROWRIGHT")
+                {
+                    modifier = 1;
+                }
+            }
+            if (modifier != 0)
+            {
+                if (Parent.Step is not null)
+                {
+                    if (handle == default)
+                    {
+                        double newLeft = LeftValue + (Parent.Step.Value * modifier);
+                        double newRight = RightValue + (Parent.Step.Value * modifier);
+                        await KeyMoveByValues(newLeft, newRight);
+                    }
+                    else
+                    {
+                        double oldValue = handle == RangeEdge.Left ? LeftValue : RightValue;
+                        await KeyMoveByValue(handle, oldValue + (Parent.Step.Value * modifier));
+                    }
+                }
+                else
+                {
+                    if (handle == default)
+                    {
+                        if (!(LeftValue == Min && modifier < 0) && !(RightValue == Max && modifier > 0))
+                        {
+                            double newLeft = Parent.Marks.Select(m => Math.Abs(m.Key + modifier * LeftValue)).Skip(1).First();
+                            double newRight = Parent.Marks.Select(m => Math.Abs(m.Key + modifier * RightValue)).Skip(1).First();
+                            await KeyMoveByValues(newLeft, newRight);
+                        }
+                    }
+                    else
+                    {
+                        double oldValue = handle == RangeEdge.Left ? LeftValue : RightValue;
+                        double newValue = Parent.Marks.Select(m => Math.Abs(m.Key + modifier * oldValue)).Skip(1).First();
+                        await KeyMoveByValue(handle, newValue);
+                    }
+                }
+            }
+        }
+
+        private async Task KeyMoveByValues(double newLeft, double newRight)
+        {
+            double rightCandidate = Clamp(newRight, Parent.GetLeftBoundary(Id, RangeEdge.Right, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Right, AttachedHandleNo));
+            double leftCandidate = Clamp(newLeft, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
+
+            if (leftCandidate == newLeft && rightCandidate == newRight)
+            {
+                ChangeLeftValue(leftCandidate, LeftValue);
+                ChangeRightValue(rightCandidate, RightValue);
+                await _toolTipLeft.Show();
+                await _toolTipRight.Show();
+            }
+        }
+
+        private async Task KeyMoveByValue(RangeEdge handle, double value)
+        {
+            if (LeftValue == RightValue)
+            {
+                if (handle == RangeEdge.Left)
+                {
+                    await SwitchToRightHandle(value);
+                }
+                else
+                {
+                    await SwitchToLeftHandle(value);
+                }
+            }
+            else
+            {
+                if (handle == RangeEdge.Left)
+                {
+                    LeftValue = value;
+                    await _toolTipLeft.Show();
+                }
+                else
+                {
+                    RightValue = value;
+                    await _toolTipRight.Show();
+                }
+            }
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -1027,26 +1134,20 @@ namespace AntDesign
         //TODO: probably should be MultiRangeSlider method
         private void GetAttachedInOrder(out RangeItem left, out RangeItem right)
         {
-            bool withOverlap = false;
             if (Parent.ItemRequestingAttach.AttachedHandleNo != Parent.ItemRespondingToAttach.AttachedHandleNo //same edges - no way to overlap
                 && Parent.AllowOverlapping)
             {
                 double rightValue, leftValue;
                 if (Parent.ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
                 {
-                    leftValue = Parent.ItemRequestingAttach.LeftValue;
-                    rightValue = Parent.ItemRespondingToAttach.RightValue;
                     right = Parent.ItemRequestingAttach;
                     left = Parent.ItemRespondingToAttach;
                 }
                 else
                 {
-                    leftValue = Parent.ItemRequestingAttach.RightValue;
-                    rightValue = Parent.ItemRespondingToAttach.LeftValue;
                     right = Parent.ItemRespondingToAttach;
                     left = Parent.ItemRequestingAttach;
                 }
-                withOverlap = leftValue > rightValue;
             }
             else
             {
@@ -1285,7 +1386,6 @@ namespace AntDesign
 
         private async Task ProcessNewRightValue(double rightV)
         {
-            //double rightV = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
             if (rightV < LeftValue)
             {
                 if (Parent.AllowOverlapping && HasAttachedEdge) //push
@@ -1295,12 +1395,7 @@ namespace AntDesign
                 }
                 else if (!HasAttachedEdge) //do not allow switching if locked with another range item
                 {
-                    _right = false;
-                    if (_mouseDown)
-                        RightValue = _initialLeftValue;
-                    LeftValue = rightV;
-                    SwitchTooltip(RangeEdge.Left);
-                    await FocusAsync(_leftHandle);
+                    await SwitchToLeftHandle(rightV);
                 }
                 else
                 {
@@ -1311,6 +1406,16 @@ namespace AntDesign
             {
                 RightValue = rightV;
             }
+        }
+
+        private async Task SwitchToLeftHandle(double rightV)
+        {
+            _right = false;
+            if (_mouseDown)
+                RightValue = _initialLeftValue;
+            LeftValue = rightV;
+            SwitchTooltip(RangeEdge.Left);
+            await FocusAsync(_leftHandle);
         }
 
         private async Task ProcessNewLeftValue(double leftV)
@@ -1324,12 +1429,7 @@ namespace AntDesign
                 }
                 else if (!HasAttachedEdge) //do not allow switching if locked with another range item
                 {
-                    _right = true;
-                    if (_mouseDown)
-                        LeftValue = _initialRightValue;
-                    RightValue = leftV;
-                    SwitchTooltip(RangeEdge.Right);
-                    await FocusAsync(_rightHandle);
+                    await SwitchToRightHandle(leftV);
                 }
                 else
                 {
@@ -1340,6 +1440,16 @@ namespace AntDesign
             {
                 LeftValue = leftV;
             }
+        }
+
+        private async Task SwitchToRightHandle(double leftV)
+        {
+            _right = true;
+            if (_mouseDown)
+                LeftValue = _initialRightValue;
+            RightValue = leftV;
+            SwitchTooltip(RangeEdge.Right);
+            await FocusAsync(_rightHandle);
         }
 
         private void SwitchTooltip(RangeEdge toHandle)
@@ -1358,6 +1468,7 @@ namespace AntDesign
                     _toolTipRight.SetVisible(TooltipVisible, true);
                 }
                 _tooltipLeftVisible = true;
+                DebugHelper.WriteLine($"_tooltipLeftVisible: {_tooltipLeftVisible}");
                 return;
             }
 
@@ -1367,6 +1478,7 @@ namespace AntDesign
                 _toolTipLeft.SetVisible(TooltipVisible, true);
             }
             _tooltipRightVisible = true;
+            DebugHelper.WriteLine($"_tooltipRightVisible: {_tooltipRightVisible}");
         }
 
         private double CalculateNewHandleValue(double clickClient, double sliderOffset, double sliderLength)
@@ -1423,7 +1535,6 @@ namespace AntDesign
             {
                 rightHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(rightHandPercentage);
                 leftHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage);
-                //trackStart = leftHandStyle;
                 trackStart = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage - trackStartAdjust);
                 trackSize = MultiRangeSlider.GetOversizedVerticalTrackSize(leftHandPercentage - trackStartAdjust, rightHandPercentage + (trackSizeAdjust - trackStartAdjust));
             }
@@ -1432,9 +1543,7 @@ namespace AntDesign
                 rightHandStyle = Formatter.ToPercentWithoutBlank(rightHandPercentage);
                 leftHandStyle = Formatter.ToPercentWithoutBlank(leftHandPercentage);
                 trackStart = Formatter.ToPercentWithoutBlank(leftHandPercentage - trackStartAdjust);
-                //trackStart = $"calc({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - {Formatter.ToPercentWithoutBlank(trackStartAdjust)})";
                 trackSize = Formatter.ToPercentWithoutBlank(((RightValue - LeftValue) / Parent.MinMaxDelta) + trackSizeAdjust);
-                //trackSize = $"calc({Formatter.ToPercentWithoutBlank((RightValue - LeftValue) / Parent.MinMaxDelta)} + {Formatter.ToPercentWithoutBlank(trackSizeAdjust)})";
             }
             _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, rightHandStyle);
             _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, trackStart, trackSize);

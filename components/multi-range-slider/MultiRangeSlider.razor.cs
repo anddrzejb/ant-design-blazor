@@ -14,14 +14,15 @@ namespace AntDesign
     {
         //TODO: performance - minimize re-renders
 
-        //TODO: Before any move, execute a callback that will have the ability to stop the move (EventCallback<bool>)
-        //TODO: add event that will fire before and after attached item is selected and attached item pair is selected (the before event should have ability to cancel the attaching)
-        //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
-        //TODO: RangeItems should be customizable similarly to tags (visuals)
-        //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
         //TODO: Styling - on hover should only highlight hovered range; continue highlighting the whole rail
+        //TODO: Add keyboard events (left/right/up/down)
+        //TODO: RangeItems should be customizable similarly to tags (visuals)        
+        //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
+        //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell
+        //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
         //TODO: Usage in form
         //TODO: switch between vertical & horizontal live (animation?)
+        //TODO: fix multiple js errors on refersh 
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         internal const int VerticalOversizedTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";

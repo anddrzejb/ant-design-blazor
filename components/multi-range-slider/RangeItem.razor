@@ -4,8 +4,13 @@
 @* //TODO: consider using templates for edges to avoid repetition *@
 <div class="@ClassMapper.Class" id="@Id" @ref="Ref">
     <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="z-index: 899;@_trackStyle" 
+        tabindex="0"
         @onmousedown="OnRangeItemClick" 
-        @onmousedown:stopPropagation>
+        @onmousedown:stopPropagation
+        @onkeydown="e => OnKeyDown(e, 0)"
+        @onkeydown:stopPropagation
+        @onkeydown:preventDefault
+        >
     </div>    
     @if (Parent.HasTooltip)
     {
@@ -22,6 +27,9 @@
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, false)"
                      @onmousedown:stopPropagation
+                     @onkeydown="e => OnKeyDown(e, RangeEdge.Left)"
+                     @onkeydown:stopPropagation
+                     @onkeydown:preventDefault
                      @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
                 </div>
             </Unbound>
@@ -39,6 +47,9 @@
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, true)"
                      @onmousedown:stopPropagation
+                     @onkeydown="e => OnKeyDown(e, RangeEdge.Right)"
+                     @onkeydown:stopPropagation
+                     @onkeydown:preventDefault
                      @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
                 </div>
             </Unbound>
@@ -57,6 +68,9 @@
              @ref="_leftHandle" 
              @onmousedown="e => OnMouseDownEdge(e, false)"
              @onmousedown:stopPropagation
+             @onkeydown="e => OnKeyDown(e, RangeEdge.Left)"
+             @onkeydown:stopPropagation
+             @onkeydown:preventDefault
              @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
         </div>
         <div tabindex="0" 
@@ -70,6 +84,9 @@
              @ref="_rightHandle" 
              @onmousedown="(e) => OnMouseDownEdge(e, true)"
              @onmousedown:stopPropagation
+             @onkeydown="e => OnKeyDown(e, RangeEdge.Right)"
+             @onkeydown:stopPropagation
+             @onkeydown:preventDefault
              @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
         </div>
     }
