@@ -2,12 +2,15 @@
 using System.Globalization;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AntDesign.Core.Helpers;
 using AntDesign.JsInterop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Primitives;
+using OneOf;
 
 namespace AntDesign
 {
@@ -33,6 +36,12 @@ namespace AntDesign
         private double _initialRightValue;
         private Tooltip _toolTipRight;
         private Tooltip _toolTipLeft;
+        private bool _customStyleChange;
+        private string _customTrackStyle = "";
+        private string _customDescriptionStyle = "";
+        private string _customFocusStyle = "";
+        private string _focusStyle = "";
+
 
         /// <summary>
         /// Used to figure out how much to move left and right when range is moved
@@ -355,7 +364,89 @@ namespace AntDesign
         [Parameter]
         public object GetTooltipPopupContainer { get; set; }
 
+        [Parameter]
+        public string Description { get; set; }
+
+        /// <summary>
+        /// Set the range's icon 
+        /// </summary>
+        [Parameter]
+        public string Icon { get; set; }
+
+        private OneOf<Color, string> _fontColor;
+        private string _fontColorAsString = "";
+        [Parameter]
+        public OneOf<Color, string> FontColor
+        {
+            get => _fontColor;
+            set
+            {
+                if (!_fontColor.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _fontColorAsString = GetColorStyle(value, "color");
+                }
+            }
+        }
+
+        private string _colorAsString = "";
+        private OneOf<Color, string> _color;
+        [Parameter]
+        public OneOf<Color, string> Color
+        {
+            get => _color;
+            set
+            {
+                if (!_color.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _colorAsString = GetColorStyle(value, "background-color");
+                }
+            }
+        }
+
+        OneOf<Color, string> _focusColor;
+        string _focusColorAsString = "";
+
+        [Parameter]
+        public OneOf<Color, string> FocusColor
+        {
+            get => _focusColor;
+            set
+            {
+                if (!_focusColor.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _focusColorAsString = GetColorStyle(value, "background-color");
+                }
+            }
+        }
+
+        //TODO: remove when two-tone color alghoritm is going to be applied
+        OneOf<Color, string> _focusBorderColor;
+        private string _focusBorderColorAsString = "";
+        [Parameter]
+        public OneOf<Color, string> FocusBorderColor
+        {
+            get => _focusBorderColor;
+            set
+            {
+                if (!_focusBorderColor.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _focusBorderColorAsString = GetColorStyle(value, "border-color");
+                }
+            }
+        }
         #endregion Parameters
+
+        private string GetColorStyle(OneOf<Color, string> color, string colorProperty)
+        {
+            return color.Match<string>(
+                colorValue => $"{colorProperty}: {ColorHelper.GetColor(colorValue)};",
+                stringValue => $"{colorProperty}: {stringValue};"
+                );
+        }
 
         protected override void OnInitialized()
         {
@@ -415,6 +506,40 @@ namespace AntDesign
                 .If($"{PreFixCls}-vertical", () => Parent.Vertical)
                 .If($"{PreFixCls}-with-marks", () => Parent.Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
+
+            SetCustomStyle();
+        }
+
+        private void SetCustomStyle()
+        {
+            if (_customStyleChange)
+            {
+                if (string.IsNullOrWhiteSpace(FontColor.Value.ToString()))
+                {
+                    _customDescriptionStyle = "";
+                }
+                else
+                {
+                    _customDescriptionStyle = _fontColorAsString;
+                }
+                if (string.IsNullOrWhiteSpace(Color.Value.ToString()))
+                {
+                    _customTrackStyle = "";
+                }
+                else
+                {
+                    _customTrackStyle = _colorAsString;
+                }
+                _focusStyle = _customTrackStyle;
+                if (!string.IsNullOrWhiteSpace(FocusColor.Value.ToString()) || !string.IsNullOrWhiteSpace(FocusBorderColor.Value.ToString()))
+                {
+                    _customFocusStyle = _focusBorderColorAsString + _focusColorAsString;
+                }
+                else
+                {
+                    _customFocusStyle = "";
+                }
+            }
         }
 
         protected override void OnAfterRender(bool firstRender)
@@ -601,6 +726,7 @@ namespace AntDesign
             if (_isFocused)
             {
                 _focusClass = $"{PreFixCls}-track-focus";
+                _focusStyle = _customFocusStyle;
                 if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
                 {
                     _leftFocusZIndex = "z-index: 1000;"; //just below default overlay zindex
@@ -613,6 +739,7 @@ namespace AntDesign
             else
             {
                 _focusClass = "";
+                _focusStyle = _customTrackStyle;
                 if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
                 {
                     _leftFocusZIndex = "z-index: 900;";
@@ -621,6 +748,10 @@ namespace AntDesign
                 {
                     _rightFocusZIndex = "z-index: 900;";
                 }
+            }
+            if (!isFocused)
+            {
+                StateHasChanged();
             }
         }
 
@@ -993,7 +1124,7 @@ namespace AntDesign
 
             AttachedItem.Slave = true;
             AttachedItem.HasAttachedEdge = true;
-            AttachedItem.AttachedItem = this; 
+            AttachedItem.AttachedItem = this;
             AttachedItem.AttachedHandleNo = GetOppositeEdge(handle);
 
             Parent.ItemRequestingAttach = this;

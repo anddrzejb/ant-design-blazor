@@ -14,9 +14,6 @@ namespace AntDesign
     {
         //TODO: performance - minimize re-renders
 
-        //TODO: Styling - on hover should only highlight hovered range; continue highlighting the whole rail
-        //TODO: Add keyboard events (left/right/up/down)
-        //TODO: RangeItems should be customizable similarly to tags (visuals)        
         //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
         //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell
         //TODO: customizable marks using render fragment and possibly transform rotate 90 deg

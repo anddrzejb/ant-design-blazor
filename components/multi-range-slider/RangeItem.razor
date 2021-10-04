@@ -3,7 +3,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @* //TODO: consider using templates for edges to avoid repetition *@
 <div class="@ClassMapper.Class" id="@Id" @ref="Ref">
-    <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="z-index: 899;@_trackStyle" 
+    <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="z-index: 899;@(_trackStyle+_focusStyle)" 
         tabindex="0"
         @onmousedown="OnRangeItemClick" 
         @onmousedown:stopPropagation
@@ -11,6 +11,16 @@
         @onkeydown:stopPropagation
         @onkeydown:preventDefault
         >
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <div class="ant-multi-range-slider-track-description" style="@_customDescriptionStyle">
+                @if (!string.IsNullOrEmpty(Icon))
+                {
+                    <Icon Type="@Icon"></Icon>
+                }
+                @Description
+            </div>
+        }
     </div>    
     @if (Parent.HasTooltip)
     {

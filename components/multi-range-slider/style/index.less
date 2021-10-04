@@ -41,10 +41,30 @@
     border-radius: @border-radius-base;
     transition: background-color 0.3s;
     mix-blend-mode: multiply;
+    border: 1px solid transparent;
 
     &-focus {
       border: 1px solid @input-hover-border-color;
       background-color: @slider-track-background-color-hover;
+    }
+
+    &-description {
+      box-sizing: border-box;
+      color: @text-color-secondary; //rgba(77, 67, 67, 0.85);
+      text-overflow: ellipsis;
+      overflow: hidden;
+      text-align: center;
+      line-height: 20px;
+      font-size: 12px;
+      padding: 0 7px;
+      font-variant: tabular-nums;
+      font-feature-settings: "tnum";
+      margin-right: 8px;
+      white-space: nowrap;
+      height: fill-available;
+      height: -moz-available;
+      height: -webkit-fill-available;
+      margin-top: -2px;
     }
   }
 
@@ -219,6 +239,12 @@
 
     .@{multi-range-slider-prefix-cls}-track {
       width: 20px;
+      .@{multi-range-slider-prefix-cls}-track-description {
+        padding: 7px 0;
+        writing-mode: vertical-rl; //in firefox during testing this had to be turned off, resized and turned on again for proper working
+        text-orientation: mixed;
+        margin-top: 0px;
+      }
     }
 
     .@{multi-range-slider-prefix-cls}-handle {
