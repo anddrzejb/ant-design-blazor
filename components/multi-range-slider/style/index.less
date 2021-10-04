@@ -43,7 +43,8 @@
     mix-blend-mode: multiply;
 
     &-focus {
-        border: 1px solid @input-hover-border-color;
+      border: 1px solid @input-hover-border-color;
+      background-color: @slider-track-background-color-hover;
     }
   }
 
@@ -98,7 +99,7 @@
     .@{multi-range-slider-prefix-cls}-rail {
       background-color: @slider-rail-background-color-hover;
     }
-    .@{multi-range-slider-prefix-cls}-track {
+    .@{multi-range-slider-prefix-cls}-track:hover {
       background-color: @slider-track-background-color-hover;
     }
     .@{multi-range-slider-prefix-cls}-handle:not(.@{ant-prefix}-tooltip-open) {
