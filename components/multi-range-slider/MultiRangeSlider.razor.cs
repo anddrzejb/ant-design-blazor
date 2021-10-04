@@ -14,11 +14,9 @@ namespace AntDesign
     {
         //TODO: performance - minimize re-renders
 
-        //TODO: add ability to have step value to extend 0.5 (example: when RightEdge = 10 and LeftEdge = 11, visually should be able to touch without overlapping, while RightEdge = 10 and LeftEdge = 10 would look like overlapping)
-        //TODO: test with other values than Min=0 & Max=100 (smaller & larger)
-        //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
         //TODO: Before any move, execute a callback that will have the ability to stop the move (EventCallback<bool>)
         //TODO: add event that will fire before and after attached item is selected and attached item pair is selected (the before event should have ability to cancel the attaching)
+        //TODO: customizable marks using render fragment and possibly transform rotate 90 deg
         //TODO: RangeItems should be customizable similarly to tags (visuals)
         //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
         //TODO: Styling - on hover should only highlight hovered range; continue highlighting the whole rail
@@ -42,6 +40,28 @@ namespace AntDesign
         internal double MinMaxDelta => Max - Min;
         internal bool Oversized { get => _oversized; set => _oversized = value; }
         internal double ItemAdjust { get; private set; }
+
+        [Parameter]
+        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
+        public Func<(RangeItem range, RangeEdge edge, double value), bool> OnEdgeMoving { get; set; }
+
+        [Parameter]
+        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
+        public EventCallback<(RangeItem range, RangeEdge edge, double value)> OnEdgeMoved { get; set; }
+
+        [Parameter]
+        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
+        public Func<(RangeItem left, RangeItem right), (bool allowAttaching, bool detachExistingOnCancel)> OnEdgeAttaching { get; set; }
+
+        [Parameter]
+        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
+        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeAttached { get; set; }
+
+        [Parameter]
+        public Func<(RangeItem left, RangeItem right), bool> OnEdgeDetaching { get; set; }
+
+        [Parameter]
+        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeDetached { get; set; }
 
         [Parameter]
         public bool AllowOverlapping { get; set; }

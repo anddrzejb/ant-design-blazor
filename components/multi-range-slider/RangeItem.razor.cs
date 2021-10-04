@@ -226,10 +226,21 @@ namespace AntDesign
 
         private void ChangeLeftValue(double value, double previousValue)
         {
+            if (_isInitialized && Parent.OnEdgeMoving is not null &&
+                !Parent.OnEdgeMoving.Invoke((range: this, edge: RangeEdge.Left, value: value)))
+            {
+                return;
+            }
+
             _leftValue = value;
             SetStyle();
             if (previousValue != CurrentValue.Item1)
                 CurrentValue = (_leftValue, RightValue);
+
+            if (_isInitialized && Parent.OnEdgeMoved.HasDelegate)
+            {
+                Parent.OnEdgeMoved.InvokeAsync((range: this, edge: RangeEdge.Left, value: value));
+            }
         }
 
         private double _rightValue = double.MaxValue;
@@ -265,10 +276,19 @@ namespace AntDesign
 
         private void ChangeRightValue(double value, double previousValue)
         {
+            if (_isInitialized && Parent.OnEdgeMoving is not null &&
+                !Parent.OnEdgeMoving.Invoke((range: this, edge: RangeEdge.Right, value: value)))
+            {
+                return;
+            }
             _rightValue = value;
             SetStyle();
             if (previousValue != CurrentValue.Item2)
                 CurrentValue = (LeftValue, _rightValue);
+            if (_isInitialized && Parent.OnEdgeMoved.HasDelegate)
+            {
+                Parent.OnEdgeMoved.InvokeAsync((range: this, edge: RangeEdge.Right, value: value));
+            }
         }
 
         private double Clamp(
@@ -499,7 +519,8 @@ namespace AntDesign
 
         private void OnDoubleClick(RangeEdge handle)
         {
-            if (!HasAttachedEdge)
+            //TODO: bUnit: attach overlapping edge when opposite overlapping edge already attached
+            if (!HasAttachedEdge || AttachedHandleNo == GetOppositeEdge(handle))
             {
                 RangeItem overlappingEdgeCandidate = handle == RangeEdge.Left ? Parent.GetLeftNeighbour(Id) : Parent.GetRightNeighbour(Id);
                 if (overlappingEdgeCandidate is null && !Parent.AllowOverlapping) //will be null when there are no other items or edge is closes to either Min or Max
@@ -507,14 +528,25 @@ namespace AntDesign
                     ResetAttached();
                     return;
                 }
-
+                bool isAttached;
                 if (IsEdgeOverlapping(handle, overlappingEdgeCandidate))
                 {
-                    AttachOverlappingEdges(handle, overlappingEdgeCandidate);
+                    isAttached = AttachOverlappingEdges(handle, overlappingEdgeCandidate, false);
                 }
                 else
                 {
-                    AttachNotOverlappingEdges(handle);
+                    isAttached = AttachNotOverlappingEdges(handle, false);
+                }
+                if (_isInitialized && isAttached && Parent.OnEdgeAttached.HasDelegate)
+                {
+                    if (handle == RangeEdge.Left)
+                    {
+                        Parent.OnEdgeAttached.InvokeAsync((left: AttachedItem, right: this));
+                    }
+                    else
+                    {
+                        Parent.OnEdgeAttached.InvokeAsync((left: this, right: AttachedItem));
+                    }
                 }
                 return;
             }
@@ -544,12 +576,12 @@ namespace AntDesign
                 }
                 ResetAttached(true);
             }
-            var currentRangeAttachResult = AttachFirstNotOverlappingEdge(currentRangeEdge);
+            var currentRangeAttachResult = AttachFirstNotOverlappingEdge(currentRangeEdge, true);
             if (!currentRangeAttachResult)
             {
                 return false;
             }
-            attachToRange.AttachNotOverlappingEdges(attachToRangeEdge);
+            attachToRange.AttachNotOverlappingEdges(attachToRangeEdge, true);
 
             return attachToRange.HasAttachedEdge;
         }
@@ -572,7 +604,7 @@ namespace AntDesign
                 ResetAttached(true);
             }
 
-            return AttachNotOverlappingEdges(currentRangeEdge, false);
+            return AttachNotOverlappingEdges(currentRangeEdge, true, false);
         }
 
         /// <summary>
@@ -612,7 +644,7 @@ namespace AntDesign
 
             if (IsEdgeOverlapping(currentRangeEdge, overlappingEdgeCandidate))
             {
-                AttachOverlappingEdges(currentRangeEdge, overlappingEdgeCandidate);
+                AttachOverlappingEdges(currentRangeEdge, overlappingEdgeCandidate, true);
             }
             return HasAttachedEdge;
         }
@@ -631,53 +663,88 @@ namespace AntDesign
             return false;
         }
 
-        internal bool AttachNotOverlappingEdges(RangeEdge handle, bool detachExisting = true)
+        public RangeEdge GetAttachedEdge() => AttachedHandleNo;
+        internal bool AttachNotOverlappingEdges(RangeEdge handle, bool outsideCall, bool detachExisting = true)
         {
-            if (!AttachFirstNotOverlappingEdge(handle))
+            if (Parent.ItemRequestingAttach is null)
             {
-                if (Parent.AllowOverlapping)
+                return AttachFirstNotOverlappingEdge(handle, outsideCall);
+            }
+            if (Parent.AllowOverlapping)
+            {
+                if (Parent.ItemRespondingToAttach is null && Parent.ItemRequestingAttach.Id != Id) //do not allow same item edge locks, use dragging
                 {
-                    if (Parent.ItemRespondingToAttach is null && Parent.ItemRequestingAttach.Id != Id) //do not allow same item edge locks, use dragging
-                    {
-                        AttachSecondNotOverlappingEdge(handle,
-                            handle == Parent.ItemRequestingAttach.HandleNoRequestingAttaching);
-                    }
-                    else if (detachExisting)
-                    {
-                        ResetAttached(true);
-                        return false;
-                    }
+                    return AttachSecondNotOverlappingEdge(handle, outsideCall,
+                        handle == Parent.ItemRequestingAttach.HandleNoRequestingAttaching);
                 }
-                else
+                else if (detachExisting)
                 {
-                    if (AreEdgesNeighbours(handle))
-                    {
-                        AttachSecondNotOverlappingEdge(handle);
-                    }
-                    else if (detachExisting)
-                    {
-                        ResetAttached(true);
-                        return false;
-                    }
+                    ResetAttached(true);
+                    return false;
+                }
+            }
+            else
+            {
+                if (AreEdgesNeighbours(handle))
+                {
+                    return AttachSecondNotOverlappingEdge(handle, outsideCall);
+                }
+                else if (detachExisting)
+                {
+                    ResetAttached(true);
+                    return false;
                 }
             }
             return true;
         }
 
-        private bool AttachFirstNotOverlappingEdge(RangeEdge handle)
+        private bool ShouldCancelAttaching(bool outsideCall, RangeEdge handle, RangeItem currentItem, RangeItem attachedItem)
         {
-            if (Parent.ItemRequestingAttach is null)
+            if (_isInitialized && !outsideCall && Parent.OnEdgeAttaching is not null)
             {
-                Parent.ItemRequestingAttach = this;
-                HandleNoRequestingAttaching = handle;
-                SetLockEdgeStyle(handle);
-                return true;
+                bool allowAttaching;
+                bool detachExistingOnCancel;
+                if (handle == RangeEdge.Left)
+                {
+                    (allowAttaching, detachExistingOnCancel) = Parent.OnEdgeAttaching((left: currentItem, right: attachedItem));
+                }
+                else
+                {
+                    (allowAttaching, detachExistingOnCancel) = Parent.OnEdgeAttaching((left: attachedItem, right: currentItem));
+                }
+                if (!allowAttaching)
+                {
+                    if (detachExistingOnCancel)
+                    {
+                        ResetAttached(true);
+                    }
+                    return true;
+                }
             }
             return false;
+
         }
 
-        private void AttachSecondNotOverlappingEdge(RangeEdge handle, bool isSameHandle = false)
+        private bool AttachFirstNotOverlappingEdge(RangeEdge handle, bool outsideCall)
         {
+            if (ShouldCancelAttaching(outsideCall, handle, this, null))
+            {
+                return false;
+            }
+
+            Parent.ItemRequestingAttach = this;
+            HandleNoRequestingAttaching = handle;
+            SetLockEdgeStyle(handle);
+            return true;
+        }
+
+        private bool AttachSecondNotOverlappingEdge(RangeEdge handle, bool outsideCall, bool isSameHandle = false)
+        {
+            if (ShouldCancelAttaching(outsideCall, handle, Parent.ItemRequestingAttach, this)) //reversed order is intentional
+            {
+                return false;
+            }
+
             Parent.ItemRespondingToAttach = this;
             Master = true;
             Parent.ItemRequestingAttach.Slave = true;
@@ -721,6 +788,7 @@ namespace AntDesign
             }
             AttachedItem.GapDistance = GapDistance;
             SetLockEdgeStyle(handle, true);
+            return true;
         }
 
         private double CalculateGapDistance()
@@ -797,8 +865,20 @@ namespace AntDesign
             return handle == RangeEdge.Right && overlappingEdgeCandidate.LeftValue == RightValue;
         }
 
-        private void AttachOverlappingEdges(RangeEdge handle, RangeItem item)
+        private bool AttachOverlappingEdges(RangeEdge handle, RangeItem item, bool outsideCall)
         {
+            if (ShouldCancelAttaching(outsideCall, handle, this, item))
+            {
+                return false;
+            }
+            if (Parent.HasAttachedEdges)
+            {
+                if (!ResetAttached(true))
+                {
+                    return false;
+                }
+            }
+
             AttachedItem = item;
             HasAttachedEdge = true;
             AttachedHandleNo = handle;
@@ -806,7 +886,7 @@ namespace AntDesign
 
             AttachedItem.Slave = true;
             AttachedItem.HasAttachedEdge = true;
-            AttachedItem.AttachedItem = this; //
+            AttachedItem.AttachedItem = this; 
             AttachedItem.AttachedHandleNo = GetOppositeEdge(handle);
 
             Parent.ItemRequestingAttach = this;
@@ -823,6 +903,7 @@ namespace AntDesign
                 AttachedItem.ChangeAttachedItem = () => this.RightValue = AttachedItem.LeftValue;
             }
             SetLockEdgeStyle(handle, true);
+            return true;
         }
 
         private static RangeEdge GetOppositeEdge(RangeEdge edge)
@@ -873,18 +954,32 @@ namespace AntDesign
             _attachedRightHandleClass = "";
             _leftHandleFill = null;
             _rightHandleFill = null;
+            _leftFocusZIndex = "z-index: 900;";
+            _rightFocusZIndex = "z-index: 900;";
             if (requestStateChange)
             {
                 StateHasChanged();
             }
         }
 
-        private void ResetAttached(bool forceReset = false)
+        private bool ResetAttached(bool forceReset = false)
         {
-            if (!HasAttachedEdge && !forceReset)
+            if (!Parent.HasAttachedEdges && !HasAttachedEdge && !forceReset)
             {
-                return;
+                return true; //nothing to detach, don't fail
             }
+            RangeItem left = null, right = null;
+            if (Parent.OnEdgeDetaching is not null || Parent.OnEdgeDetached.HasDelegate)
+            {
+                GetAttachedInOrder(out left, out right);
+                if (Parent.OnEdgeDetaching is not null && !Parent.OnEdgeDetaching.Invoke((left, right)))
+                {
+                    return false;
+                }
+            }
+
+            bool requestStateChange = Parent.HasAttachedEdges && !HasAttachedEdge;
+
             //reset all attached
             if (HasAttachedEdgeWithGap || forceReset)
             {
@@ -904,12 +999,16 @@ namespace AntDesign
                     AttachedItem.Slave = false;
                 }
                 ResetLockEdgeStyle(false);
+                Parent.ItemRequestingAttach = null;
+                Parent.ItemRespondingToAttach = null;
+
                 Master = false;
                 AttachedItem.Slave = false;
                 AttachedItem.HasAttachedEdge = false;
-                AttachedItem.AttachedItem = null; //
+                AttachedItem.AttachedItem = null;
                 AttachedItem.AttachedHandleNo = 0;
                 AttachedItem.ChangeAttachedItem = default;
+                AttachedItem.ResetLockEdgeStyle(false);
 
                 AttachedItem = default;
                 AttachedHandleNo = 0;
@@ -918,6 +1017,50 @@ namespace AntDesign
             }
             SetFocus(_isFocused);
             HasAttachedEdgeWithGap = false;
+            if (Parent.OnEdgeDetached.HasDelegate)
+            {
+                Parent.OnEdgeDetached.InvokeAsync((left, right));
+            }
+            return true;
+        }
+
+        //TODO: probably should be MultiRangeSlider method
+        private void GetAttachedInOrder(out RangeItem left, out RangeItem right)
+        {
+            bool withOverlap = false;
+            if (Parent.ItemRequestingAttach.AttachedHandleNo != Parent.ItemRespondingToAttach.AttachedHandleNo //same edges - no way to overlap
+                && Parent.AllowOverlapping)
+            {
+                double rightValue, leftValue;
+                if (Parent.ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
+                {
+                    leftValue = Parent.ItemRequestingAttach.LeftValue;
+                    rightValue = Parent.ItemRespondingToAttach.RightValue;
+                    right = Parent.ItemRequestingAttach;
+                    left = Parent.ItemRespondingToAttach;
+                }
+                else
+                {
+                    leftValue = Parent.ItemRequestingAttach.RightValue;
+                    rightValue = Parent.ItemRespondingToAttach.LeftValue;
+                    right = Parent.ItemRespondingToAttach;
+                    left = Parent.ItemRequestingAttach;
+                }
+                withOverlap = leftValue > rightValue;
+            }
+            else
+            {
+                if (Parent.ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
+                {
+                    left = Parent.ItemRequestingAttach;
+                    right = Parent.ItemRespondingToAttach;
+                }
+                else
+                {
+                    left = Parent.ItemRespondingToAttach;
+                    right = Parent.ItemRequestingAttach;
+                }
+            }
         }
 
         private static void ResetNotOverlapping(RangeItem item, string currentRangeId)
