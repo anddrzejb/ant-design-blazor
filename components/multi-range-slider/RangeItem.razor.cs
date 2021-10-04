@@ -722,7 +722,12 @@ namespace AntDesign
 
         internal void SetFocus(bool isFocused)
         {
+            if (_isFocused == isFocused)
+            {
+                return;
+            }
             _isFocused = isFocused;
+
             if (_isFocused)
             {
                 _focusClass = $"{PreFixCls}-track-focus";
