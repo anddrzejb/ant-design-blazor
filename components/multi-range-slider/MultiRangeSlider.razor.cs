@@ -7,6 +7,7 @@ using System.Linq;
 using System;
 using AntDesign.JsInterop;
 using System.Threading.Tasks;
+using AntDesign.Select.Internal;
 
 namespace AntDesign
 {
@@ -27,6 +28,7 @@ namespace AntDesign
         private string _sizeType = "width";
         private string _railStyle = "";
         private double _boundaryAdjust = 0;
+        private bool _isInitialized;
         //private double _itemAdjust = 0; //
         private bool _oversized;
         internal ElementReference _railRef;
@@ -76,7 +78,7 @@ namespace AntDesign
         [Parameter]
         public bool ExpandStep
         {
-            get => _expandStep; 
+            get => _expandStep;
             set
             {
 
@@ -283,37 +285,39 @@ namespace AntDesign
             }
         }
 
-        protected IEnumerable<(double, double)> _values;
+        protected IEnumerable<(double, double)> _value;
         private double _visibleMin;
-        private double _visibleMax;
-
+        private double _visibleMax;        
         /// <summary>
         /// Get or set the selected values.
         /// </summary>
         [Parameter]
-        public virtual IEnumerable<(double, double)> Values
+        public override IEnumerable<(double, double)> Value
         {
-            get => _values;
+            get => _value;
             set
             {
-                if (value != null && _values != null)
+                if (value != null && _value != null)
                 {
-                    var hasChanged = !value.SequenceEqual(_values);
+                    var hasChanged = !value.SequenceEqual(_value);
 
                     if (!hasChanged)
                     {
                         return;
                     }
 
-                    _values = value;
+                    _value = value;
+                    _ = OnValueChangeAsync(value);
                 }
-                else if (value != null && _values == null)
+                else if (value != null && _value == null)
                 {
-                    _values = value;
+                    _value = value;
+                    _ = OnValueChangeAsync(value);
                 }
-                else if (value == null && _values != null)
+                else if (value == null && _value != null)
                 {
-                    _values = default;
+                    _value = default;
+                    _ = OnValueChangeAsync(value);
                 }
 
                 if (_isNotifyFieldChanged && Form?.ValidateOnChange == true)
@@ -324,6 +328,116 @@ namespace AntDesign
         }
 
         /// <summary>
+        ///     The Method is called every time if the value of the @bind-Values was changed by the two-way binding.
+        /// </summary>
+        protected async Task OnValueChangeAsync(IEnumerable<(double, double)> values)
+        {
+            if (!_isInitialized) // This is important because otherwise the initial value is overwritten by the EventCallback of ValueChanged and would be NULL.
+            {
+                return;
+            }
+
+            if (!_items.Any())
+            {
+                return;
+            }
+
+            if (values == null)
+            {
+                await ValueChanged.InvokeAsync(default);
+                //OnSelectedItemsChanged?.Invoke(default);
+                return;
+            }
+
+            //EvaluateValuesChangedOutsideComponent(values);
+
+            //OnSelectedItemsChanged?.Invoke(SelectedOptionItems.Select(s => s.Item));
+            await ValueChanged.InvokeAsync(Value);
+        }
+
+        void RangeItemValueChanged(int index, (double, double) value)
+        {
+            DebugHelper.WriteLine($"{value}, {index}");
+            //var enumerator = _value.GetEnumerator();
+            //int i = 0;
+            //while (true)
+            //{
+            //    if (i == index)
+            //    {
+            //        enumerator. = value;
+            //    }
+            //}
+
+            var temp = _value.ToList();
+            temp[index] = value;
+            Value = temp;
+            //_ = OnValueChangeAsync(_value);
+            //await ValueChanged.InvokeAsync(Value);
+        }
+
+        /// <summary>
+        ///     When bind-Values is changed outside of the component, then component
+        ///     selected items have to be reselected according to new values passed.
+        ///     TODO: (Perf) Consider using hash to identify if the passed values are different from currently selected.
+        /// </summary>
+        /// <param name="values">The values that need to be selected.</param>
+        //private void EvaluateValuesChangedOutsideComponent(IEnumerable<(double, double)> values)
+        //{
+        //    var newSelectedItems = new List<(double, double)>();
+        //    var deselectList = SelectedOptionItems.ToDictionary(item => item.Value, item => item);
+        //    foreach (var value in values.ToList())
+        //    {
+        //        SelectOptionItem<TItemValue, TItem> result;
+        //        if (SelectMode == SelectMode.Multiple)
+        //        {
+        //            result = SelectOptionItems.FirstOrDefault(x =>
+        //                !x.IsSelected && EqualityComparer<TItemValue>.Default.Equals(x.Value, value));
+        //            if (result != null && !result.IsDisabled)
+        //            {
+        //                result.IsSelected = true;
+        //                SelectedOptionItems.Add(result);
+        //            }
+
+        //            deselectList.Remove(value);
+        //        }
+        //        else
+        //        {
+        //            result = SelectOptionItems.FirstOrDefault(x =>
+        //                EqualityComparer<TItemValue>.Default.Equals(x.Value, value));
+        //            if (result is null) //tag delivered from outside, needs to be added to the list of options
+        //            {
+        //                result = CreateSelectOptionItem(value.ToString(), true);
+        //                result.IsSelected = true;
+        //                AddedTags.Add(result);
+        //                SelectOptionItems.Add(result);
+        //                SelectedOptionItems.Add(result);
+        //            }
+        //            else if (result != null && !result.IsSelected && !result.IsDisabled)
+        //            {
+        //                result.IsSelected = true;
+        //                SelectedOptionItems.Add(result);
+        //            }
+
+        //            deselectList.Remove(value);
+        //        }
+        //    }
+
+        //    if (deselectList.Count > 0)
+        //    {
+        //        foreach (var item in deselectList)
+        //        {
+        //            item.Value.IsSelected = false;
+        //            SelectedOptionItems.Remove(item.Value);
+        //            if (item.Value.IsAddedTag)
+        //            {
+        //                SelectOptionItems.Remove(item.Value);
+        //                AddedTags.Remove(item.Value);
+        //            }
+        //        }
+        //    }
+        //}
+
+        /// <summary>
         /// Used for rendering select options manually.
         /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
@@ -332,6 +446,7 @@ namespace AntDesign
         {
             base.OnInitialized();
             _trackSize = GetRangeFullSize();
+            _isInitialized = true;
         }
 
         protected override void OnParametersSet()
@@ -775,5 +890,7 @@ namespace AntDesign
         }
 
         private string GetBasePosition() => Vertical ? "bottom" : "left";
+
+
     }
 }

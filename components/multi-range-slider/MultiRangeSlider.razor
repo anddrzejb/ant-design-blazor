@@ -29,9 +29,13 @@
             else
             {
                 @* //TODO: apply data source approach, test changing data source after initialization *@
-                <RangeItem DefaultValue="(20d, 50d)"/>
-                <RangeItem DefaultValue="(55d, 70d)"/>
-                <RangeItem DefaultValue="(75d, 100d)"/>
+                int i = 0;
+                foreach(var rangeItemValue in Value)
+                {
+                    int iterator = i;
+                    <RangeItem Value="@rangeItemValue" ValueChanged="(v) => RangeItemValueChanged(iterator, v)"/>    
+                    i++;
+                }
             }
         </CascadingValue>
         <div class="ant-multi-range-slider-mark">

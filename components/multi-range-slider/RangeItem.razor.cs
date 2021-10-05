@@ -212,20 +212,16 @@ namespace AntDesign
             get => _leftValue;
             set
             {
-                double candidate;
-                if (!Slave)
+                double candidate = value;
+                if (_isInitialized)
                 {
-                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
-                }
-                else
-                {
-                    if (Parent.AllowOverlapping)
+                    if (!Slave)
+                    {
+                        candidate = Clamp(value, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
+                    }
+                    else if (Parent.AllowOverlapping)
                     {
                         candidate = Clamp(value, Min, Max);
-                    }
-                    else
-                    {
-                        candidate = value;
                     }
                 }
                 if (_leftValue != value)
@@ -262,20 +258,16 @@ namespace AntDesign
             get => _rightValue;
             set
             {
-                double candidate;
-                if (!Slave)
+                double candidate = value;
+                if (_isInitialized)
                 {
-                    candidate = Clamp(value, Parent.GetLeftBoundary(Id, RangeEdge.Right, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Right, AttachedHandleNo));
-                }
-                else
-                {
-                    if (Parent.AllowOverlapping)
+                    if (!Slave)
+                    {
+                        candidate = Clamp(value, Parent.GetLeftBoundary(Id, RangeEdge.Right, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Right, AttachedHandleNo));
+                    }
+                    else if (Parent.AllowOverlapping)
                     {
                         candidate = Clamp(value, Min, Max);
-                    }
-                    else
-                    {
-                        candidate = value;
                     }
                 }
                 if (_rightValue != value)
@@ -472,9 +464,22 @@ namespace AntDesign
 
         public override Task SetParametersAsync(ParameterView parameters)
         {
+            var dict = parameters.ToDictionary();
+            if (!_isInitialized)
+            {
+                MultiRangeSlider parent;
+                if (!dict.ContainsKey(nameof(Parent)))
+                {
+                    throw new ArgumentNullException($"{nameof(RangeItem)} cannot be used independently. It has to be nested inside {nameof(MultiRangeSlider)}.");
+                }
+                else parameters.TryGetValue(nameof(Parent), out parent);
+                {
+                    Parent = parent;
+                }
+            }
+
             base.SetParametersAsync(parameters);
 
-            var dict = parameters.ToDictionary();
             if (!_isInitialized)
             {
                 if (!dict.ContainsKey(nameof(Value)))
