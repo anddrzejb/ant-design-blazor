@@ -11,34 +11,59 @@ namespace AntDesign
             Value = value;
         }
 
-        public RangeItemData((double first, double second) value, string description) : this(value)
+        public RangeItemData((double first, double second) value, string description = "") : this(value)
         {
             Description = description;
         }
 
-        public RangeItemData((double first, double second) value, string description, string icon) : this(value, description)
+        public RangeItemData(
+            (double first, double second) value,
+            string description = "",
+            string icon = "") : this(value, description)
         {
             Icon = icon;
         }
 
-        public RangeItemData((double first, double second) value, string description, string icon, OneOf<Color, string> fontColor) : this(value, description, icon)
+        public RangeItemData(
+            (double first, double second) value,
+            string description = "",
+            string icon = "",
+            OneOf<Color, string>? fontColor = null) : this(value, description, icon)
         {
-            FontColor = fontColor;
+            FontColor = fontColor ?? default;
         }
 
-        public RangeItemData((double first, double second) value, string description, string icon, OneOf<Color, string> fontColor, OneOf<Color, string> color) : this(value, description, icon, fontColor)
+        public RangeItemData(
+            (double first, double second) value,
+            string description = "",
+            string icon = "",
+            OneOf<Color, string>? fontColor = null,
+            OneOf<Color, string>? color = null) : this(value, description, icon, fontColor)
         {
-            Color = color;
+            Color = color ?? default;
         }
 
-        public RangeItemData((double first, double second) value, string description, string icon, OneOf<Color, string> fontColor, OneOf<Color, string> color, OneOf<Color, string> focusColor) : this(value, description, icon, fontColor, color)
+        public RangeItemData(
+            (double first, double second) value,
+            string description = "",
+            string icon = "",
+            OneOf<Color, string>? fontColor = null,
+            OneOf<Color, string>? color = null,
+            OneOf<Color, string>? focusColor = null) : this(value, description, icon, fontColor, color)
         {
-            FocusColor = focusColor;
+            FocusColor = focusColor ?? default;
         }
 
-        public RangeItemData((double first, double second) value, string description, string icon, OneOf<Color, string> fontColor, OneOf<Color, string> color, OneOf<Color, string> focusColor, OneOf<Color, string> focusBorderColor) : this(value, description, icon, fontColor, color, focusColor)
+        public RangeItemData(
+            (double first, double second) value,
+            string description = "",
+            string icon = "",
+            OneOf<Color, string>? fontColor = null,
+            OneOf<Color, string>? color = null,
+            OneOf<Color, string>? focusColor = null,
+            OneOf<Color, string>? focusBorderColor = null) : this(value, description, icon, fontColor, color, focusColor)
         {
-            FocusBorderColor = focusBorderColor;
+            FocusBorderColor = focusBorderColor ?? default;
         }
 
         public (double first, double second) Value { get; set; }

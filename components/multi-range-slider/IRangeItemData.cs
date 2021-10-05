@@ -11,6 +11,5 @@ namespace AntDesign
         OneOf<Color, string> Color { get; set; }
         OneOf<Color, string> FocusColor { get; set; }
         OneOf<Color, string> FocusBorderColor { get; set; }
-
     }
 }
