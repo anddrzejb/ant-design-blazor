@@ -35,11 +35,9 @@
                      aria-valuemax="100" 
                      style="@(_leftHandleStyle+_leftFocusZIndex+_customEdgeBorderStyle)" 
                      @ref="@context.Current" 
-                     @onmousedown="e => OnMouseDownEdge(e, false)"
-                     @onmousedown:stopPropagation
-                     @onkeydown="e => OnKeyDown(e, RangeEdge.Left)"
-                     @onkeydown:stopPropagation
-                     @onkeydown:preventDefault
+                     @onmousedown="e => OnMouseDownEdge(e, false)" @onmousedown:stopPropagation
+                     @onkeydown="e => OnKeyDown(e, RangeEdge.Left)" @onkeydown:stopPropagation @onkeydown:preventDefault
+                     @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
                      @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
                 </div>
             </Unbound>
@@ -55,11 +53,9 @@
                      aria-valuemax="100" 
                      style="@(_rightHandleStyle+_rightFocusZIndex+_customEdgeBorderStyle)" 
                      @ref="@context.Current" 
-                     @onmousedown="e => OnMouseDownEdge(e, true)"
-                     @onmousedown:stopPropagation
-                     @onkeydown="e => OnKeyDown(e, RangeEdge.Right)"
-                     @onkeydown:stopPropagation
-                     @onkeydown:preventDefault
+                     @onmousedown="e => OnMouseDownEdge(e, true)" @onmousedown:stopPropagation
+                     @onkeydown="e => OnKeyDown(e, RangeEdge.Right)" @onkeydown:stopPropagation @onkeydown:preventDefault
+                     @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
                      @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
                 </div>
             </Unbound>
@@ -76,11 +72,9 @@
              aria-valuemax="@Parent.Max" 
              style="@(_leftHandleStyle+_leftFocusZIndex+_customEdgeBorderStyle)" 
              @ref="_leftHandle" 
-             @onmousedown="e => OnMouseDownEdge(e, false)"
-             @onmousedown:stopPropagation
-             @onkeydown="e => OnKeyDown(e, RangeEdge.Left)"
-             @onkeydown:stopPropagation
-             @onkeydown:preventDefault
+             @onmousedown="e => OnMouseDownEdge(e, false)" @onmousedown:stopPropagation
+             @onkeydown="e => OnKeyDown(e, RangeEdge.Left)" @onkeydown:stopPropagation @onkeydown:preventDefault
+             @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
              @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
         </div>
         <div tabindex="0" 
@@ -92,11 +86,9 @@
              aria-valuemax="100" 
              style="@(_rightHandleStyle+_rightFocusZIndex+_customEdgeBorderStyle)" 
              @ref="_rightHandle" 
-             @onmousedown="(e) => OnMouseDownEdge(e, true)"
-             @onmousedown:stopPropagation
-             @onkeydown="e => OnKeyDown(e, RangeEdge.Right)"
-             @onkeydown:stopPropagation
-             @onkeydown:preventDefault
+             @onmousedown="(e) => OnMouseDownEdge(e, true)" @onmousedown:stopPropagation
+             @onkeydown="e => OnKeyDown(e, RangeEdge.Right)" @onkeydown:stopPropagation @onkeydown:preventDefault
+             @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
              @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
         </div>
     }

@@ -20,6 +20,7 @@ namespace AntDesign
         //TODO: Usage in form
         //TODO: switch between vertical & horizontal live (animation?)
         //TODO: fix multiple js errors on refersh 
+        //TODO: test with & without tooltip & with forced tooltip
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         internal const int VerticalOversizedTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
@@ -236,6 +237,18 @@ namespace AntDesign
             }
         }
 
+        /// <summary>
+        /// Fire when changes are done (onmouseup and onkeyup).
+        /// </summary>
+        [Parameter]
+        public EventCallback<(double, double)> OnAfterChange { get; set; }
+
+        /// <summary>
+        /// Callback function that is fired when the user changes one of the values.
+        /// </summary>
+        [Parameter]
+        public EventCallback<(double, double)> OnChange { get; set; }
+
         [Parameter]
         public double VisibleMin
         {
@@ -287,7 +300,7 @@ namespace AntDesign
 
         protected IEnumerable<(double, double)> _value;
         private double _visibleMin;
-        private double _visibleMax;        
+        private double _visibleMax;
         /// <summary>
         /// Get or set the selected values.
         /// </summary>
@@ -357,24 +370,13 @@ namespace AntDesign
 
         void RangeItemValueChanged(int index, (double, double) value)
         {
-            DebugHelper.WriteLine($"{value}, {index}");
-            //var enumerator = _value.GetEnumerator();
-            //int i = 0;
-            //while (true)
-            //{
-            //    if (i == index)
-            //    {
-            //        enumerator. = value;
-            //    }
-            //}
-
+            //TODO: check if _value can be switched ot a List of tuples or other wrapped object, so it is passed as reference to RangeItem and can be used with @bind modifier
             var temp = _value.ToList();
             temp[index] = value;
             Value = temp;
-            //_ = OnValueChangeAsync(_value);
-            //await ValueChanged.InvokeAsync(Value);
         }
 
+        //TODO: taken from Select -> check if this applies
         /// <summary>
         ///     When bind-Values is changed outside of the component, then component
         ///     selected items have to be reselected according to new values passed.

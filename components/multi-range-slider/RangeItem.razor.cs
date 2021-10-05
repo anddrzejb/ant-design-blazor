@@ -43,6 +43,10 @@ namespace AntDesign
         private string _focusStyle = "";
         private string _customEdgeBorderStyle = "";
 
+        /// <summary>
+        /// Used to evaluate if OnAfterChange needs to be called
+        /// </summary>
+        private (double, double) _valueCache;
 
         /// <summary>
         /// Used to figure out how much to move left and right when range is moved
@@ -224,7 +228,7 @@ namespace AntDesign
                         candidate = Clamp(value, Min, Max);
                     }
                 }
-                if (_leftValue != value)
+                if (_leftValue != candidate)
                 {
                     ChangeLeftValue(candidate, value);
                 }
@@ -242,8 +246,10 @@ namespace AntDesign
             _leftValue = value;
             SetStyle();
             if (previousValue != CurrentValue.Item1)
+            {
                 CurrentValue = (_leftValue, RightValue);
-
+                RaiseOnChangeCallback();
+            }
             if (_isInitialized && Parent.OnEdgeMoved.HasDelegate)
             {
                 Parent.OnEdgeMoved.InvokeAsync((range: this, edge: RangeEdge.Left, value: value));
@@ -251,6 +257,21 @@ namespace AntDesign
         }
 
         private double _rightValue = double.MaxValue;
+
+        private void RaiseOnChangeCallback()
+        {
+            if (_isInitialized)
+            {
+                if (OnChange.HasDelegate)
+                {
+                    OnChange.InvokeAsync(CurrentValue);
+                }
+                if (Parent.OnChange.HasDelegate)
+                {
+                    Parent.OnChange.InvokeAsync(CurrentValue);
+                }
+            }
+        }
 
         // the default non-range value
         internal double RightValue
@@ -270,7 +291,7 @@ namespace AntDesign
                         candidate = Clamp(value, Min, Max);
                     }
                 }
-                if (_rightValue != value)
+                if (_rightValue != candidate)
                 {
                     ChangeRightValue(candidate, value);
                 }
@@ -287,7 +308,10 @@ namespace AntDesign
             _rightValue = value;
             SetStyle();
             if (previousValue != CurrentValue.Item2)
+            {
                 CurrentValue = (LeftValue, _rightValue);
+                RaiseOnChangeCallback();
+            }
             if (_isInitialized && Parent.OnEdgeMoved.HasDelegate)
             {
                 Parent.OnEdgeMoved.InvokeAsync((range: this, edge: RangeEdge.Right, value: value));
@@ -309,16 +333,16 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// Fire when onmouseup is fired.
+        /// Fire when changes are done (onmouseup and onkeyup).
         /// </summary>
         [Parameter]
-        public Action<(double, double)> OnAfterChange { get; set; } //use Action here intead of EventCallback, otherwise VS will not complie when user add a delegate
+        public EventCallback<(double, double)> OnAfterChange { get; set; }
 
         /// <summary>
-        /// Callback function that is fired when the user changes the slider's value.
+        /// Callback function that is fired when the user changes one of the values.
         /// </summary>
         [Parameter]
-        public Action<(double, double)> OnChange { get; set; }
+        public EventCallback<(double, double)> OnChange { get; set; }
 
         [Parameter]
         public Placement TooltipPlacement { get; set; }
@@ -601,6 +625,7 @@ namespace AntDesign
             }
             if (modifier != 0)
             {
+                _valueCache = _value;
                 if (Parent.Step is not null)
                 {
                     if (handle == default)
@@ -634,6 +659,28 @@ namespace AntDesign
                     }
                 }
             }
+        }
+
+        private async Task OnKeyUp(KeyboardEventArgs e)
+        {
+            if (OnAfterChange.HasDelegate || Parent.OnAfterChange.HasDelegate)
+            {
+                if (e == null) throw new ArgumentNullException(nameof(e));
+                var key = e.Key.ToUpperInvariant();
+                bool raiseEvent = false;
+                if (Parent.Vertical)
+                {
+                    raiseEvent = key == "ARROWUP" || key == "ARROWDOWN";
+                }
+                else if (!Parent.Vertical)
+                {
+                    raiseEvent = key == "ARROWLEFT" || key == "ARROWRIGHT";
+                }
+#pragma warning disable CS4014 // Does not return anything, fire & forget
+                RaiseOnAfterChangeCallback(() => raiseEvent && _valueCache != _value);
+#pragma warning restore CS4014 // Does not return anything, fire & forget
+            }
+
         }
 
         private async Task KeyMoveByValues(double newLeft, double newRight)
@@ -719,6 +766,7 @@ namespace AntDesign
             double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
             _distanceToLeftHandle = clickedValue - LeftValue;
             _distanceToRightHandle = RightValue - clickedValue;
+            _valueCache = _value;
             if (HasAttachedEdge && !Master)
             {
                 SetAsMaster();
@@ -1343,6 +1391,7 @@ namespace AntDesign
             _initialRightValue = _rightValue;
             _trackedClientX = args.ClientX;
             _trackedClientY = args.ClientY;
+            _valueCache = _value;
             if (_toolTipRight != null)
             {
                 if (_right)
@@ -1394,11 +1443,7 @@ namespace AntDesign
             _trackedClientX = jsonElement.GetProperty("clientX").GetDouble();
             _trackedClientY = jsonElement.GetProperty("clientY").GetDouble();
             double clickPosition = Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble();
-            if (await predicate(clickPosition))
-            {
-                OnChange?.Invoke(CurrentValue);
-            }
-            else
+            if (!await predicate(clickPosition))
             {
                 _shouldRender = false;
             }
@@ -1408,13 +1453,13 @@ namespace AntDesign
         {
             _shouldRender = true;
             bool isMoveInEdgeBoundary = IsMoveInEdgeBoundary(jsonElement);
+            bool raiseOnAfterChangeEvent = _mouseDown || _mouseDownOnTrack;
             if (_mouseDown)
             {
                 _mouseDown = false;
                 if (!isMoveInEdgeBoundary)
                 {
                     await CalculateValueAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble());
-                    OnAfterChange?.Invoke(CurrentValue);
                 }
             }
             if (_mouseDownOnTrack)
@@ -1427,6 +1472,10 @@ namespace AntDesign
                     AttachedItem.GapDistance = GapDistance;
                 }
             }
+#pragma warning disable CS4014 // Does not return anything, fire & forget            
+            RaiseOnAfterChangeCallback(() => raiseOnAfterChangeEvent && _valueCache != _value);
+#pragma warning restore CS4014 // Does not return anything, fire & forget
+
             if (_toolTipRight != null)
             {
                 if (_tooltipRightVisible != TooltipVisible)
@@ -1444,6 +1493,22 @@ namespace AntDesign
 
             _initialLeftValue = _leftValue;
             _initialRightValue = _rightValue;
+        }
+
+        private Task RaiseOnAfterChangeCallback(Func<bool> predicate)
+        {
+            if (predicate.Invoke())
+            {
+                if (OnAfterChange.HasDelegate)
+                {
+                    OnAfterChange.InvokeAsync(CurrentValue);
+                }
+                if (Parent.OnAfterChange.HasDelegate)
+                {
+                    Parent.OnAfterChange.InvokeAsync(CurrentValue);
+                }
+            }
+            return Task.CompletedTask;
         }
 
         private async Task<bool> CalculateValueAsync(double clickClient)
