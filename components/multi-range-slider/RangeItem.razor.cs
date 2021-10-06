@@ -22,9 +22,9 @@ namespace AntDesign
         private HtmlElement _sliderDom;
         private ElementReference _leftHandle;
         private ElementReference _rightHandle;
-        private string _leftHandleStyle = "left: 0%; right: auto; transform: translateX(-50%);";
-        private string _rightHandleStyle = "left: 0%; right: auto; transform: translateX(-50%);";
-        private string _trackStyle = "left: 0%; width: 0%; right: auto;";
+        private string _leftHandleCssPosition = "left: 0%; right: auto; transform: translateX(-50%);";
+        private string _rightHandleCssPosition = "left: 0%; right: auto; transform: translateX(-50%);";
+        private string _trackCssPosition = "left: 0%; width: 0%; right: auto;";
         private bool _isFocused;
         private string _focusClass = "";
         private string _leftFocusZIndex = "z-index: 900;";
@@ -248,7 +248,7 @@ namespace AntDesign
                 return;
             }
             _leftValue = value;
-            SetStyle();
+            SetPositions();
             if (previousValue != CurrentValue.Item1)
             {
                 CurrentValue = (_leftValue, RightValue);
@@ -314,7 +314,7 @@ namespace AntDesign
                 return;
             }
             _rightValue = value;
-            SetStyle();
+            SetPositions();
             if (previousValue != CurrentValue.Item2)
             {
                 CurrentValue = (LeftValue, _rightValue);
@@ -481,7 +481,7 @@ namespace AntDesign
         {
             base.OnInitialized();
             Parent.AddRangeItem(this);
-            SetStyle();
+            SetPositions();
         }
         private bool _shouldRender = true;
         protected override bool ShouldRender()
@@ -645,9 +645,9 @@ namespace AntDesign
                 else
                 {
                     _customTrackStyle = _colorAsString;
-                    _customEdgeBorderStyle = GetColorStyle(_color, "border-color");                    
+                    _customEdgeBorderStyle = GetColorStyle(_color, "border-color");
                 }
-                _focusStyle = _customTrackStyle;
+                //_focusStyle = _customTrackStyle;
                 if (!string.IsNullOrWhiteSpace(FocusColor.Value.ToString()) || !string.IsNullOrWhiteSpace(FocusBorderColor.Value.ToString()))
                 {
                     _customFocusStyle = _focusBorderColorAsString + _focusColorAsString;
@@ -885,7 +885,7 @@ namespace AntDesign
             else
             {
                 _focusClass = "";
-                _focusStyle = _customTrackStyle;
+                _focusStyle = "";
                 if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
                 {
                     _leftFocusZIndex = "z-index: 900;";
@@ -1806,7 +1806,7 @@ namespace AntDesign
             return (Parent.MinMaxDelta * handleNewPosition / sliderLength) + Min;
         }
 
-        internal void SetStyle()
+        internal void SetPositions()
         {
             var rightHandPercentage = (RightValue - Min) / Parent.MinMaxDelta;
             var leftHandPercentage = (LeftValue - Min) / Parent.MinMaxDelta;
@@ -1841,9 +1841,9 @@ namespace AntDesign
                 trackStart = Formatter.ToPercentWithoutBlank(leftHandPercentage - trackStartAdjust);
                 trackSize = Formatter.ToPercentWithoutBlank(((RightValue - LeftValue) / Parent.MinMaxDelta) + trackSizeAdjust);
             }
-            _rightHandleStyle = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, rightHandStyle);
-            _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, trackStart, trackSize);
-            _leftHandleStyle = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, leftHandStyle);
+            _rightHandleCssPosition = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, rightHandStyle);
+            _trackCssPosition = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, trackStart, trackSize);
+            _leftHandleCssPosition = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, leftHandStyle);
             StateHasChanged();
         }
 

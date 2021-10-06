@@ -3,7 +3,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @* //TODO: consider using templates for edges to avoid repetition *@
 <div class="@ClassMapper.Class" id="@Id" @ref="Ref">
-    <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="z-index: 899;@(_trackStyle+_focusStyle)" 
+    <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="z-index: 899;@(_trackCssPosition+_customTrackStyle+_focusStyle)" 
         tabindex="0"
         @onmousedown="OnRangeItemClick" 
         @onmousedown:stopPropagation
@@ -33,7 +33,7 @@
                      aria-valuenow="30" 
                      aria-valuemin="0" 
                      aria-valuemax="100" 
-                     style="@(_leftHandleStyle+_leftFocusZIndex+_customEdgeBorderStyle)" 
+                     style="@(_leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, false)" @onmousedown:stopPropagation
                      @onkeydown="e => OnKeyDown(e, RangeEdge.Left)" @onkeydown:stopPropagation @onkeydown:preventDefault
@@ -51,7 +51,7 @@
                      aria-valuenow="30" 
                      aria-valuemin="0" 
                      aria-valuemax="100" 
-                     style="@(_rightHandleStyle+_rightFocusZIndex+_customEdgeBorderStyle)" 
+                     style="@(_rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle)" 
                      @ref="@context.Current" 
                      @onmousedown="e => OnMouseDownEdge(e, true)" @onmousedown:stopPropagation
                      @onkeydown="e => OnKeyDown(e, RangeEdge.Right)" @onkeydown:stopPropagation @onkeydown:preventDefault
@@ -70,7 +70,7 @@
              aria-valuenow="30" 
              aria-valuemin="@Parent.Min" 
              aria-valuemax="@Parent.Max" 
-             style="@(_leftHandleStyle+_leftFocusZIndex+_customEdgeBorderStyle)" 
+             style="@(_leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle)" 
              @ref="_leftHandle" 
              @onmousedown="e => OnMouseDownEdge(e, false)" @onmousedown:stopPropagation
              @onkeydown="e => OnKeyDown(e, RangeEdge.Left)" @onkeydown:stopPropagation @onkeydown:preventDefault
@@ -84,7 +84,7 @@
              aria-valuenow="30" 
              aria-valuemin="0" 
              aria-valuemax="100" 
-             style="@(_rightHandleStyle+_rightFocusZIndex+_customEdgeBorderStyle)" 
+             style="@(_rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle)" 
              @ref="_rightHandle" 
              @onmousedown="(e) => OnMouseDownEdge(e, true)" @onmousedown:stopPropagation
              @onkeydown="e => OnKeyDown(e, RangeEdge.Right)" @onkeydown:stopPropagation @onkeydown:preventDefault

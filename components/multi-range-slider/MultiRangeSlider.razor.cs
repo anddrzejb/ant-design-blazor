@@ -191,7 +191,7 @@ namespace AntDesign
                     //TODO: Optimize - move to either each RangeItem or OnParametersSet
                     if (_items.Any())
                     {
-                        _items.ForEach(x => x.SetStyle());
+                        _items.ForEach(x => x.SetPositions());
                     }
                 }
             }
