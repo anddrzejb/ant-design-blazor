@@ -26,14 +26,23 @@
             {        
                 @ChildContent
             }
-            else
+            else if (Data is not null)
             {
-                @* //TODO: apply data source approach, test changing data source after initialization *@
+                int i = 0;
+                foreach(var rangeItemData in Data)
+                {                    
+                    int iterator = i;                    
+                    <RangeItem @key=@($"Id_{iterator}") Value="@rangeItemData.Value" ValueChanged="(v) => RangeItemDataChanged(rangeItemData, v)" Data="@rangeItemData"/>
+                    i++;
+                }
+            }
+            else 
+            {
                 int i = 0;
                 foreach(var rangeItemValue in Value)
                 {
-                    int iterator = i;
-                    <RangeItem Value="@rangeItemValue" ValueChanged="(v) => RangeItemValueChanged(iterator, v)"/>
+                    int iterator = i;                    
+                    <RangeItem @key=@($"Id_{iterator}") Value="@rangeItemValue" ValueChanged="(v) => RangeItemValueChanged(iterator, v)"/>
                     i++;
                 }
             }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -42,6 +43,7 @@ namespace AntDesign
         private string _customFocusStyle = "";
         private string _focusStyle = "";
         private string _customEdgeBorderStyle = "";
+        private bool _isDataSet;
 
         /// <summary>
         /// Used to evaluate if OnAfterChange needs to be called
@@ -178,6 +180,9 @@ namespace AntDesign
         [CascadingParameter(Name = "Range")]
         public MultiRangeSlider Parent { get => _parent; set => _parent = value; }
 
+        [Parameter]
+        public IRangeItemData Data { get; set; }
+
         /// <summary>
         /// The default value of slider. When <see cref="Range"/> is false, use number, otherwise, use [number, number]
         /// </summary>
@@ -242,7 +247,6 @@ namespace AntDesign
             {
                 return;
             }
-
             _leftValue = value;
             SetStyle();
             if (previousValue != CurrentValue.Item1)
@@ -269,6 +273,10 @@ namespace AntDesign
                 if (Parent.OnChange.HasDelegate)
                 {
                     Parent.OnChange.InvokeAsync(CurrentValue);
+                }
+                if (_isDataSet && Data.OnChange.HasDelegate)
+                {
+                    Data.OnChange.InvokeAsync(CurrentValue);
                 }
             }
         }
@@ -500,13 +508,20 @@ namespace AntDesign
                 {
                     Parent = parent;
                 }
-            }
 
-            base.SetParametersAsync(parameters);
-
-            if (!_isInitialized)
-            {
+                //if (dict.ContainsKey(nameof(Data)) && dict.ContainsKey(nameof(Value)))
+                //{
+                //    throw new ArgumentException($"{nameof(Data)}, {nameof(Value)}", $"Either {nameof(Data)} or {nameof(Value)} parameters can be set. Not both.");
+                //}
+                //else if (dict.ContainsKey(nameof(Data)))
+                if (dict.ContainsKey(nameof(Data)))
+                {
+                    Data = parameters.GetValueOrDefault<IRangeItemData>(nameof(Data), default);
+                    _isDataSet = true;
+                    ApplyData(true);
+                }
                 if (!dict.ContainsKey(nameof(Value)))
+                //if (!dict.ContainsKey(nameof(Value)))
                 {
                     (double, double) defaultValue = parameters.GetValueOrDefault(nameof(DefaultValue), (0d, 0d));
                     LeftValue = defaultValue.Item1;
@@ -517,6 +532,24 @@ namespace AntDesign
                     LeftValue = CurrentValue.Item1;
                     RightValue = CurrentValue.Item2;
                 }
+
+            }
+
+            base.SetParametersAsync(parameters);
+
+            if (!_isInitialized)
+            {
+                //if (!dict.ContainsKey(nameof(Value)))
+                //{
+                //    (double, double) defaultValue = parameters.GetValueOrDefault(nameof(DefaultValue), (0d, 0d));
+                //    LeftValue = defaultValue.Item1;
+                //    RightValue = defaultValue.Item2;
+                //}
+                //else
+                //{
+                //    LeftValue = CurrentValue.Item1;
+                //    RightValue = CurrentValue.Item2;
+                //}
                 if (!dict.ContainsKey(nameof(TooltipPlacement)))
                 {
                     if (Parent.Vertical)
@@ -541,7 +574,55 @@ namespace AntDesign
                 .If($"{PreFixCls}-with-marks", () => Parent.Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
 
+            if (_isInitialized)
+            {
+                ApplyData();
+            }
             SetCustomStyle();
+        }
+
+        private void ApplyData(bool force = false)
+        {
+            if (!_isDataSet)
+            {
+                return;
+            }
+            //if (Data is null)
+            //{
+            //    this.Dispose();
+            //    return;
+            //}
+            //if (force || !Data.Value.Equals(Value))
+            //{
+            //    DebugHelper.WriteLine($"Prev value: {Value}, new value: {Data.Value}");
+            //    Value = Data.Value;
+            //    //ChangeLeftValue(Data.Value.Item1, LeftValue);
+            //    //ChangeRightValue(Data.Value.Item2, RightValue);
+            //}
+            if (force || Data.Description != Description)
+            {
+                Description = Data.Description;
+            }
+            if (force || Data.Icon != Icon)
+            {
+                Icon = Data.Icon;
+            }
+            if (force || Data.FontColor.Equals(FontColor))
+            {
+                FontColor = Data.FontColor;
+            }
+            if (force || Data.FocusColor.Equals(FocusColor))
+            {
+                FocusColor = Data.FocusColor;
+            }
+            if (force || Data.FocusBorderColor.Equals(FocusBorderColor))
+            {
+                FocusBorderColor = Data.FocusBorderColor;
+            }
+            if (force || Data.Color.Equals(Color))
+            {
+                Color = Data.Color;
+            }
         }
 
         private void SetCustomStyle()
@@ -564,8 +645,7 @@ namespace AntDesign
                 else
                 {
                     _customTrackStyle = _colorAsString;
-                    _customEdgeBorderStyle = GetColorStyle(_color, "border-color");
-                    DebugHelper.WriteLine($"_customTrackStyle: {_customTrackStyle}, _customEdgeBorderStyle: {_customEdgeBorderStyle}");
+                    _customEdgeBorderStyle = GetColorStyle(_color, "border-color");                    
                 }
                 _focusStyle = _customTrackStyle;
                 if (!string.IsNullOrWhiteSpace(FocusColor.Value.ToString()) || !string.IsNullOrWhiteSpace(FocusBorderColor.Value.ToString()))
@@ -663,7 +743,7 @@ namespace AntDesign
 
         private async Task OnKeyUp(KeyboardEventArgs e)
         {
-            if (OnAfterChange.HasDelegate || Parent.OnAfterChange.HasDelegate)
+            if (OnAfterChange.HasDelegate || Parent.OnAfterChange.HasDelegate || (_isDataSet && Data.OnAfterChange.HasDelegate))
             {
                 if (e == null) throw new ArgumentNullException(nameof(e));
                 var key = e.Key.ToUpperInvariant();
@@ -1507,6 +1587,10 @@ namespace AntDesign
                 {
                     Parent.OnAfterChange.InvokeAsync(CurrentValue);
                 }
+                if (_isDataSet && Data.OnAfterChange.HasDelegate)
+                {
+                    Data.OnAfterChange.InvokeAsync(CurrentValue);
+                }
             }
             return Task.CompletedTask;
         }
@@ -1682,7 +1766,6 @@ namespace AntDesign
                     _toolTipRight.SetVisible(TooltipVisible, true);
                 }
                 _tooltipLeftVisible = true;
-                DebugHelper.WriteLine($"_tooltipLeftVisible: {_tooltipLeftVisible}");
                 return;
             }
 
@@ -1692,7 +1775,6 @@ namespace AntDesign
                 _toolTipLeft.SetVisible(TooltipVisible, true);
             }
             _tooltipRightVisible = true;
-            DebugHelper.WriteLine($"_tooltipRightVisible: {_tooltipRightVisible}");
         }
 
         private double CalculateNewHandleValue(double clickClient, double sliderOffset, double sliderLength)
@@ -1763,7 +1845,6 @@ namespace AntDesign
             _trackStyle = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, trackStart, trackSize);
             _leftHandleStyle = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, leftHandStyle);
             StateHasChanged();
-
         }
 
         protected override void OnValueChange((double, double) value)

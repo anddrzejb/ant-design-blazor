@@ -1,4 +1,5 @@
-﻿using OneOf;
+﻿using Microsoft.AspNetCore.Components;
+using OneOf;
 
 namespace AntDesign
 {
@@ -73,5 +74,7 @@ namespace AntDesign
         public OneOf<Color, string> Color { get; set; }
         public OneOf<Color, string> FocusColor { get; set; }
         public OneOf<Color, string> FocusBorderColor { get; set; }
+        public EventCallback<(double, double)> OnChange { get; set; }
+        public EventCallback<(double, double)> OnAfterChange { get; set; }
     }
 }

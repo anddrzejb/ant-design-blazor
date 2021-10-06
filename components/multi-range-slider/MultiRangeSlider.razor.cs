@@ -15,7 +15,6 @@ namespace AntDesign
     {
         //TODO: performance - minimize re-renders
 
-        //TODO: DataSource logic (either collection of tuples or collection of pre-made class that will also contain info about disabled range & visuals)
         //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell
         //TODO: Usage in form
         //TODO: switch between vertical & horizontal live (animation?)
@@ -71,6 +70,16 @@ namespace AntDesign
         /// </summary>
         [Parameter]
         public bool Disabled { get; set; }
+
+        [Parameter]
+        public IEnumerable<IRangeItemData> Data { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets a callback that updates the bound value.
+        /// </summary>
+        [Parameter]
+        public EventCallback<IEnumerable<IRangeItemData>> DataChanged { get; set; }
 
         private bool _expandStepHasChanged;
         /// <summary>
@@ -368,6 +377,12 @@ namespace AntDesign
             await ValueChanged.InvokeAsync(Value);
         }
 
+        async Task RangeItemDataChanged(IRangeItemData data, (double, double) value)
+        {
+            data.Value = value;
+            await DataChanged.InvokeAsync(Data);
+        }
+
         void RangeItemValueChanged(int index, (double, double) value)
         {
             //TODO: check if _value can be switched ot a List of tuples or other wrapped object, so it is passed as reference to RangeItem and can be used with @bind modifier
@@ -375,6 +390,8 @@ namespace AntDesign
             temp[index] = value;
             Value = temp;
         }
+
+
 
         //TODO: taken from Select -> check if this applies
         /// <summary>
@@ -505,6 +522,11 @@ namespace AntDesign
             if (Step != null && (Max - Min) / Step % 1 != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(Step), $"Must be divided by ({Max} - {Min}).");
+            }
+
+            if (Data is not null && Value is not null)
+            {
+                throw new ArgumentException($"{nameof(Data)}, {nameof(Value)}", $"Either {nameof(Data)} or {nameof(Value)} parameters can be set. Not both.");
             }
         }
 
