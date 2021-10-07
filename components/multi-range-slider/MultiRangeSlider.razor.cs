@@ -398,6 +398,12 @@ namespace AntDesign
         }
 
         /// <summary>
+        /// Used to style overflowing container. Avoid using unless in oversized mode.
+        /// </summary>
+        [Parameter]
+        public string OverflowStyle { get; set; } = "";
+
+        /// <summary>
         ///     The Method is called every time if the value of the @bind-Values was changed by the two-way binding.
         /// </summary>
         protected async Task OnValueChangeAsync(IEnumerable<(double, double)> values)
@@ -508,6 +514,14 @@ namespace AntDesign
                 if (_orientationHasChanged && _items.Count > 0)
                 {
                     delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetPositions)));
+                }
+                if (Vertical)
+                {
+                    TooltipPlacement = Placement.Right;
+                }
+                else 
+                {
+                    TooltipPlacement = Placement.Top;
                 }
                 _orientationHasChanged = false;
             }

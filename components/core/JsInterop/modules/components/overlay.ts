@@ -378,6 +378,10 @@ export class Overlay {
     return containerDimension - position - overlayDimension;
   }
 
+  public getOverlayPlacement(): Placement {
+    return this.placement;
+  }
+
   private removeHiddenClass() {    
     let end = this.overlay.className.indexOf("-hidden");
     let start = this.overlay.className.lastIndexOf(" ", end)
@@ -759,7 +763,7 @@ export class Overlay {
     this.applyPlacement();
   }
 
-  private applyPlacement() {
+  public applyPlacement() {
     if (this.recentPlacement !== this.placement) {
       let currentPlacement: string;
       const stringMach = `${this.triggerPrefixCls}-placement-`;

@@ -2,7 +2,7 @@
 @inherits AntInputComponentBase<IEnumerable<(double, double)>>
 @using Microsoft.AspNetCore.Components.Web
 @using AntDesign.Core.Helpers
-<div style="@(_overflow)" @ref="_scrollableAreaRef">
+<div style="@(_overflow+OverflowStyle)" @ref="_scrollableAreaRef">
     <div class="@ClassMapper.Class" style="@(_trackSize + @Style)" id="@Id" @ref="Ref">
         <div class="ant-multi-range-slider-rail" @ref=@_railRef style="@_railStyle">
         </div>

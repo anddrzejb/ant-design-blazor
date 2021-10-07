@@ -418,7 +418,7 @@ namespace AntDesign.Internal
         internal async Task UpdatePosition(int? overlayLeft = null, int? overlayTop = null)
         {
             bool triggerIsWrappedInDiv = Trigger.Unbound is null;
-
+            //DebugHelper.WriteLine($"OVerlay updatePositoin, {Trigger.Placement}");
             _position = await JsInvokeAsync<OverlayPosition>(JSInteropConstants.OverlayComponentHelper.UpdateOverlayPosition,
                 Ref.Id, Ref, Trigger.Ref, Trigger.Placement, Trigger.PopupContainerSelector,
                 Trigger.BoundaryAdjustMode, triggerIsWrappedInDiv, Trigger.PrefixCls,

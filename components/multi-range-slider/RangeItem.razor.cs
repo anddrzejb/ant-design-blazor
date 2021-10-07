@@ -524,15 +524,18 @@ namespace AntDesign
                 {
                     _tooltipRightVisible = _tooltipVisible;
                     _tooltipLeftVisible = _tooltipVisible;
-                    if (_tooltipVisible)
+                    if (_toolTipRight != null)
                     {
-                        InvokeAsync(async() => await _toolTipLeft.Show());
-                        InvokeAsync(async () => await _toolTipRight.Show());
-                    }
-                    else
-                    {
-                        InvokeAsync(async () => await _toolTipLeft.Hide());
-                        InvokeAsync(async () => await _toolTipRight.Hide());
+                        if (_tooltipVisible)
+                        {
+                            InvokeAsync(async () => await _toolTipLeft.Show());
+                            InvokeAsync(async () => await _toolTipRight.Show());
+                        }
+                        else
+                        {
+                            InvokeAsync(async () => await _toolTipLeft.Hide());
+                            InvokeAsync(async () => await _toolTipRight.Hide());
+                        }
                     }
                 }
             }
@@ -591,10 +594,10 @@ namespace AntDesign
             {
                 if (!dict.ContainsKey(nameof(TooltipPlacement)))
                 {
-                    if (Parent.Vertical)
-                        TooltipPlacement = Placement.Right;
+                    if (Parent.Vertical && !_tooltipPlacementSet)
+                        _tooltipPlacement = Placement.Right;
                     else
-                        TooltipPlacement = Placement.Top;
+                        _tooltipPlacement = Placement.Top;
                 }
             }
 
