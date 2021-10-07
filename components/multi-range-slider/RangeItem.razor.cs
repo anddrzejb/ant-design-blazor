@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AntDesign.Core.Helpers;
 using AntDesign.JsInterop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.Primitives;
 using OneOf;
 
 namespace AntDesign
@@ -511,11 +508,6 @@ namespace AntDesign
                     Parent = parent;
                 }
 
-                //if (dict.ContainsKey(nameof(Data)) && dict.ContainsKey(nameof(Value)))
-                //{
-                //    throw new ArgumentException($"{nameof(Data)}, {nameof(Value)}", $"Either {nameof(Data)} or {nameof(Value)} parameters can be set. Not both.");
-                //}
-                //else if (dict.ContainsKey(nameof(Data)))
                 if (dict.ContainsKey(nameof(Data)))
                 {
                     Data = parameters.GetValueOrDefault<IRangeItemData>(nameof(Data), default);
@@ -541,17 +533,6 @@ namespace AntDesign
 
             if (!_isInitialized)
             {
-                //if (!dict.ContainsKey(nameof(Value)))
-                //{
-                //    (double, double) defaultValue = parameters.GetValueOrDefault(nameof(DefaultValue), (0d, 0d));
-                //    LeftValue = defaultValue.Item1;
-                //    RightValue = defaultValue.Item2;
-                //}
-                //else
-                //{
-                //    LeftValue = CurrentValue.Item1;
-                //    RightValue = CurrentValue.Item2;
-                //}
                 if (!dict.ContainsKey(nameof(TooltipPlacement)))
                 {
                     if (Parent.Vertical)
@@ -589,18 +570,6 @@ namespace AntDesign
             {
                 return;
             }
-            //if (Data is null)
-            //{
-            //    this.Dispose();
-            //    return;
-            //}
-            //if (force || !Data.Value.Equals(Value))
-            //{
-            //    DebugHelper.WriteLine($"Prev value: {Value}, new value: {Data.Value}");
-            //    Value = Data.Value;
-            //    //ChangeLeftValue(Data.Value.Item1, LeftValue);
-            //    //ChangeRightValue(Data.Value.Item2, RightValue);
-            //}
             if (force || Data.Description != Description)
             {
                 Description = Data.Description;
@@ -665,11 +634,18 @@ namespace AntDesign
         {
             if (firstRender)
             {
+                DomEventListener.AddShared<JsonElement>("window", "beforeunload", Reloading);
                 DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
                 DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
             }
             base.OnAfterRender(firstRender);
         }
+
+        /// <summary>
+        /// Indicates that a page is being refreshed
+        /// </summary>
+        private bool _isReloading;
+        private void Reloading(JsonElement jsonElement) => _isReloading = true;
 
         protected override void Dispose(bool disposing)
         {
@@ -774,8 +750,9 @@ namespace AntDesign
             {
                 ChangeLeftValue(leftCandidate, LeftValue);
                 ChangeRightValue(rightCandidate, RightValue);
-                await _toolTipLeft.Show();
-                await _toolTipRight.Show();
+                var tooltipLeft = _toolTipLeft.Show();
+                var tooltipRight = _toolTipRight.Show();
+                await Task.WhenAll(tooltipLeft, tooltipRight);
             }
         }
 
@@ -837,9 +814,10 @@ namespace AntDesign
             if (_toolTipRight != null)
             {
                 _tooltipRightVisible = true;
-                _toolTipRight.SetVisible(true, true);
                 _tooltipLeftVisible = true;
-                _toolTipLeft.SetVisible(true, true);
+                var tooltipRight = _toolTipRight.Show();
+                var tooltipLeft = _toolTipLeft.Show();
+                await Task.WhenAll(tooltipLeft, tooltipRight);
             }
 
             //evaluate clicked position in respect to each edge
@@ -1552,7 +1530,7 @@ namespace AntDesign
                 {
                     GapDistance = CalculateGapDistance();
                     AttachedItem.GapDistance = GapDistance;
-                }                
+                }
             }
 #pragma warning disable CS4014 // Does not return anything, fire & forget            
             RaiseOnAfterChangeCallback(() => raiseOnAfterChangeEvent && _valueCache != _value);

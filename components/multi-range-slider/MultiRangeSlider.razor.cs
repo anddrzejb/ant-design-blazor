@@ -12,10 +12,10 @@ namespace AntDesign
     {
         //TODO: performance - minimize re-renders
 
-        //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell
-        //TODO: switch between vertical & horizontal live (animation?)
+        //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell        
         //TODO: fix multiple js errors on refersh 
-        //TODO: test with & without tooltip & with forced tooltip
+        //TODO: tooltip in serverside often show in an incorrect position first time (when clicking on range, not on an edge
+        //TODO: tooltip: when range has focus, toggling tooltip to be visible does not show it
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         //TODO: RangeItem.razor - edges probably should be templates
         //TODO: Tooltip should not be visible when edge is overflowing
@@ -40,19 +40,15 @@ namespace AntDesign
         internal double ItemAdjust { get; private set; }
 
         [Parameter]
-        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
         public Func<(RangeItem range, RangeEdge edge, double value), bool> OnEdgeMoving { get; set; }
 
         [Parameter]
-        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
         public EventCallback<(RangeItem range, RangeEdge edge, double value)> OnEdgeMoved { get; set; }
 
         [Parameter]
-        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
         public Func<(RangeItem left, RangeItem right), (bool allowAttaching, bool detachExistingOnCancel)> OnEdgeAttaching { get; set; }
 
         [Parameter]
-        //TODO: consider passing an interface (RangeItem exposes to much stuff?)
         public EventCallback<(RangeItem left, RangeItem right)> OnEdgeAttached { get; set; }
 
         [Parameter]
@@ -82,7 +78,7 @@ namespace AntDesign
 
         private bool _expandStepHasChanged;
         /// <summary>
-        /// 
+        /// Whether to merge visually neighboring steps.
         /// </summary>
         [Parameter]
         public bool ExpandStep
@@ -198,7 +194,9 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// The granularity the slider can step through values. Must greater than 0, and be divided by (<see cref="VisibleMax"/> - <see cref="VisibleMin"/>) . When <see cref="Marks"/> no null, <see cref="Step"/> can be null.
+        /// The granularity the slider can step through values. 
+        /// Must greater than 0, and be divided by (<see cref="VisibleMax"/> - <see cref="VisibleMin"/>) . 
+        /// When <see cref="Marks"/> no null, <see cref="Step"/> can be null.
         /// </summary>
         private double? _step = 1;
 
@@ -374,13 +372,8 @@ namespace AntDesign
             if (values == null)
             {
                 await ValueChanged.InvokeAsync(default);
-                //OnSelectedItemsChanged?.Invoke(default);
                 return;
             }
-
-            //EvaluateValuesChangedOutsideComponent(values);
-
-            //OnSelectedItemsChanged?.Invoke(SelectedOptionItems.Select(s => s.Item));
             await ValueChanged.InvokeAsync(Value);
         }
 
@@ -392,77 +385,12 @@ namespace AntDesign
 
         void RangeItemValueChanged(int index, (double, double) value)
         {
-            //TODO: check if _value can be switched ot a List of tuples or other wrapped object, so it is passed as reference to RangeItem and can be used with @bind modifier
+            //TODO: check if _value can be switched to a List of tuples or other wrapped object, so it is passed as reference to RangeItem and can be used with @bind modifier
             var temp = _value.ToList();
             temp[index] = value;
             _value = temp;
             _ = OnValueChangeAsync(temp);
         }
-
-
-
-        //TODO: taken from Select -> check if this applies
-        /// <summary>
-        ///     When bind-Values is changed outside of the component, then component
-        ///     selected items have to be reselected according to new values passed.
-        ///     TODO: (Perf) Consider using hash to identify if the passed values are different from currently selected.
-        /// </summary>
-        /// <param name="values">The values that need to be selected.</param>
-        //private void EvaluateValuesChangedOutsideComponent(IEnumerable<(double, double)> values)
-        //{
-        //    var newSelectedItems = new List<(double, double)>();
-        //    var deselectList = SelectedOptionItems.ToDictionary(item => item.Value, item => item);
-        //    foreach (var value in values.ToList())
-        //    {
-        //        SelectOptionItem<TItemValue, TItem> result;
-        //        if (SelectMode == SelectMode.Multiple)
-        //        {
-        //            result = SelectOptionItems.FirstOrDefault(x =>
-        //                !x.IsSelected && EqualityComparer<TItemValue>.Default.Equals(x.Value, value));
-        //            if (result != null && !result.IsDisabled)
-        //            {
-        //                result.IsSelected = true;
-        //                SelectedOptionItems.Add(result);
-        //            }
-
-        //            deselectList.Remove(value);
-        //        }
-        //        else
-        //        {
-        //            result = SelectOptionItems.FirstOrDefault(x =>
-        //                EqualityComparer<TItemValue>.Default.Equals(x.Value, value));
-        //            if (result is null) //tag delivered from outside, needs to be added to the list of options
-        //            {
-        //                result = CreateSelectOptionItem(value.ToString(), true);
-        //                result.IsSelected = true;
-        //                AddedTags.Add(result);
-        //                SelectOptionItems.Add(result);
-        //                SelectedOptionItems.Add(result);
-        //            }
-        //            else if (result != null && !result.IsSelected && !result.IsDisabled)
-        //            {
-        //                result.IsSelected = true;
-        //                SelectedOptionItems.Add(result);
-        //            }
-
-        //            deselectList.Remove(value);
-        //        }
-        //    }
-
-        //    if (deselectList.Count > 0)
-        //    {
-        //        foreach (var item in deselectList)
-        //        {
-        //            item.Value.IsSelected = false;
-        //            SelectedOptionItems.Remove(item.Value);
-        //            if (item.Value.IsAddedTag)
-        //            {
-        //                SelectOptionItems.Remove(item.Value);
-        //                AddedTags.Remove(item.Value);
-        //            }
-        //        }
-        //    }
-        //}
 
         /// <summary>
         /// Used for rendering select options manually.

@@ -528,7 +528,7 @@ export class Overlay {
     //first positioning is applied by blazor - without it, a flicker is visible
     if (applyLocation) {
       this.applyLocation();
-    }    
+    }
     return this.sanitizedPosition;
   }
 
@@ -629,8 +629,8 @@ export class Overlay {
   private logToConsole(extraMessage = "") {
     console.log(extraMessage + " Overlay position:", this.position,
       "Input",
-      { 
-        blazorId: this.blazorId,        
+      {
+        blazorId: this.blazorId,
         container: {
           info: this.containerInfo,
           parentInfo: {
@@ -639,10 +639,10 @@ export class Overlay {
             scrollLeft: this.container.parentElement.scrollLeft,
             scrollTop: this.container.parentElement.scrollTop
           },
-          containerId: this.container.id,        
+          containerId: this.container.id,
           containerBoundarySize: this.containerBoundarySize,
         },
-        trigger: { 
+        trigger: {
           absoluteTop: this.triggerInfo.absoluteTop,
           absoluteLeft: this.triggerInfo.absoluteLeft,
           clientHeight: this.triggerInfo.clientHeight,
@@ -654,7 +654,7 @@ export class Overlay {
           triggerHtml: this.trigger.outerHTML,
           triggerPrefixCls: this.triggerPrefixCls
         },
-        overlay: { 
+        overlay: {
           clientHeight: this.overlayInfo.clientHeight,
           clientWidth: this.overlayInfo.clientWidth,
           offsetHeight: this.overlayInfo.offsetHeight,
@@ -672,7 +672,7 @@ export class Overlay {
           innerWidth: window.innerWidth,
           pageXOffset: window.pageXOffset,
           pageYOffset: window.pageYOffset,
-        },        
+        },
         documentElement: {
           clientHeight: document.documentElement.clientHeight,
           clientWidth: document.documentElement.clientWidth,
@@ -681,14 +681,19 @@ export class Overlay {
         scrollbars: this.scrollbarSize,
         overlayPreset: this.overlayPreset,
         overlayConstraints: this.overlayConstraints,
-        position: this.position,           
+        position: this.position,
         sanitizedPosition: this.sanitizedPosition,
         placment: {
-         initialPlacement: this.initialPlacement,
-         recentPlacement: this.recentPlacement,
-         placement: this.placement,
-         selectedHorizontalPosition: this.selectedHorizontalPosition,
-         selectedVerticalPosition: this.selectedVerticalPosition
+          initialPlacement: this.initialPlacement,
+          recentPlacement: this.recentPlacement,
+          placement: this.placement,
+          selectedHorizontalPosition: this.selectedHorizontalPosition,
+          selectedVerticalPosition: this.selectedVerticalPosition
+        },
+        elements: {
+          trigger: this.trigger,
+          overlay: this.overlay,
+          container: this.container
         }
       }
     );    

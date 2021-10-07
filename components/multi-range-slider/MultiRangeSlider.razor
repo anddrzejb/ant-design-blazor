@@ -13,8 +13,6 @@
                 @foreach (RangeItemMark mark in Marks)
                 {
                     <span style="position: absolute;@($"{GetBasePosition()}: {SetMarkPosition(mark.Key)};")">
-                        @*<span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-first"></span>
-                        <span class="ant-multi-range-slider-dot ant-multi-range-slider-dot-second"></span>*@
                         <span class="ant-multi-range-slider-dot-line-dot"></span>
                     </span>
                 }
