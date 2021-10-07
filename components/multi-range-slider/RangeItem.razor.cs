@@ -800,44 +800,12 @@ namespace AntDesign
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private async Task OnRangeItemClick(MouseEventArgs args)
-        {
-            if (!_isFocused)
-            {
-                SetFocus(true);
-                Parent.SetRangeItemFocus(this, true);
-            }
-            _initialLeftValue = _leftValue;
-            _initialRightValue = _rightValue;
-            _trackedClientX = args.ClientX;
-            _trackedClientY = args.ClientY;
-            if (_toolTipRight != null)
-            {
-                _tooltipRightVisible = true;
-                _tooltipLeftVisible = true;
-                var tooltipRight = _toolTipRight.Show();
-                var tooltipLeft = _toolTipLeft.Show();
-                await Task.WhenAll(tooltipLeft, tooltipRight);
-            }
-
-            //evaluate clicked position in respect to each edge
-            _mouseDownOnTrack = !Disabled && !Parent.Disabled;
-            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
-            double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
-            _distanceToLeftHandle = clickedValue - LeftValue;
-            _distanceToRightHandle = RightValue - clickedValue;
-            _valueCache = _value;
-            if (HasAttachedEdge && !Master)
-            {
-                SetAsMaster();
-            }
-        }
-
-        private async Task<(double, double)> GetSliderDimensions(ElementReference reference)
+        private async Task<(double, double, double width, double height)> GetSliderDimensions(ElementReference reference)
         {
             _sliderDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, reference);
             return ((double)(Parent.Vertical ? _sliderDom.AbsoluteTop : _sliderDom.AbsoluteLeft),
-                    (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth));
+                    (double)(Parent.Vertical ? _sliderDom.ClientHeight : _sliderDom.ClientWidth),
+                    (double)_sliderDom.ClientWidth, (double)_sliderDom.ClientHeight);
 
         }
 
@@ -1438,8 +1406,46 @@ namespace AntDesign
             }
         }
 
+        private async Task OnRangeItemClick(MouseEventArgs args)
+        {
+            if (!_isFocused)
+            {
+                SetFocus(true);
+                Parent.SetRangeItemFocus(this, true);
+            }
+            _initialLeftValue = _leftValue;
+            _initialRightValue = _rightValue;
+            _trackedClientX = args.ClientX;
+            _trackedClientY = args.ClientY;
+            if (_toolTipRight != null)
+            {
+                _tooltipRightVisible = true;
+                _tooltipLeftVisible = true;
+                var tooltipRight = _toolTipRight.Show();
+                var tooltipLeft = _toolTipLeft.Show();
+                await Task.WhenAll(tooltipLeft, tooltipRight);
+            }
+
+            //evaluate clicked position in respect to each edge
+            _mouseDownOnTrack = !Disabled && !Parent.Disabled;
+            (double sliderOffset, double sliderLength, double sliderWidth, double sliderHeight) 
+                = await GetSliderDimensions(Parent._railRef);
+            _trackedClientWidth = sliderWidth;
+            sliderHeight = _trackedClientHeight;
+            double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
+            _distanceToLeftHandle = clickedValue - LeftValue;
+            _distanceToRightHandle = RightValue - clickedValue;
+            _valueCache = _value;
+            if (HasAttachedEdge && !Master)
+            {
+                SetAsMaster();
+            }
+        }
+
         private double _trackedClientX;
         private double _trackedClientY;
+        private double _trackedClientWidth;
+        private double _trackedClientHeight;
 
         private void OnMouseDownEdge(MouseEventArgs args, bool right)
         {
@@ -1451,6 +1457,8 @@ namespace AntDesign
             _initialRightValue = _rightValue;
             _trackedClientX = args.ClientX;
             _trackedClientY = args.ClientY;
+            _trackedClientWidth = _trackedClientX;
+            _trackedClientHeight = _trackedClientY;
             _valueCache = _value;
             if (_toolTipRight != null)
             {
@@ -1477,12 +1485,13 @@ namespace AntDesign
             AttachedItem.Slave = true;
         }
 
-        private bool IsMoveInEdgeBoundary(JsonElement jsonElement)
+        private bool IsMoveWithinBoundary(JsonElement jsonElement)
         {
             double clientX = jsonElement.GetProperty("clientX").GetDouble();
             double clientY = jsonElement.GetProperty("clientY").GetDouble();
-
-            return (clientX == _trackedClientX && clientY == _trackedClientY);
+            bool xCoordinateIsWithinBoundary = _trackedClientX <= clientX && clientX <= _trackedClientX + _trackedClientWidth;
+            bool yCoordinateIsWithinBoundary = _trackedClientY <= clientY && clientY <= _trackedClientY + _trackedClientHeight;
+            return xCoordinateIsWithinBoundary && yCoordinateIsWithinBoundary;
         }
 
         private async void OnMouseMove(JsonElement jsonElement)
@@ -1509,14 +1518,39 @@ namespace AntDesign
             }
         }
 
+        private async Task<bool> WaitFor(Func<bool> check, int probings = 100, int waitTimeInMilisecondsPerProbing = 10)
+        {
+            if (!check())
+            {
+                for (int i = 0; i < probings; i++)
+                {
+                    await Task.Delay(waitTimeInMilisecondsPerProbing);
+                    if (check())
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return true;
+        }
+
         private async void OnMouseUp(JsonElement jsonElement)
         {
+            bool isMoveInEdgeBoundary = IsMoveWithinBoundary(jsonElement);
+            if (!_mouseDown && !_mouseDownOnTrack && isMoveInEdgeBoundary)
+            {
+                //force blazor OnMouseDown events to run first
+                await WaitFor(() => _mouseDown | _mouseDownOnTrack);
+            }
             _shouldRender = true;
-            bool isMoveInEdgeBoundary = IsMoveInEdgeBoundary(jsonElement);
+
             bool raiseOnAfterChangeEvent = _mouseDown || _mouseDownOnTrack;
             if (_mouseDown)
             {
                 _mouseDown = false;
+                _trackedClientHeight = double.MinValue;
+                _trackedClientWidth = double.MinValue;
                 if (!isMoveInEdgeBoundary)
                 {
                     await CalculateValueAsync(Parent.Vertical ? jsonElement.GetProperty("pageY").GetDouble() : jsonElement.GetProperty("pageX").GetDouble());
@@ -1526,6 +1560,8 @@ namespace AntDesign
             {
                 _mouseDownOnTrack = false;
                 IsRangeDragged = false;
+                _trackedClientHeight = double.MinValue;
+                _trackedClientWidth = double.MinValue;
                 if (HasAttachedEdgeWithGap)
                 {
                     GapDistance = CalculateGapDistance();
@@ -1541,13 +1577,13 @@ namespace AntDesign
                 if (_tooltipRightVisible != TooltipVisible)
                 {
                     _tooltipRightVisible = TooltipVisible;
-                    _toolTipRight.SetVisible(TooltipVisible, true);
+                    _toolTipRight.SetVisible(TooltipVisible);
                 }
 
                 if (_tooltipLeftVisible != TooltipVisible)
                 {
                     _tooltipLeftVisible = TooltipVisible;
-                    _toolTipLeft.SetVisible(TooltipVisible, true);
+                    _toolTipLeft.SetVisible(TooltipVisible);
                 }
             }
 
@@ -1577,7 +1613,7 @@ namespace AntDesign
 
         private async Task<bool> CalculateValueAsync(double clickClient)
         {
-            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
+            (double sliderOffset, double sliderLength, _, _) = await GetSliderDimensions(Parent._railRef);
             bool hasChanged;
             if (_right)
             {
@@ -1598,7 +1634,7 @@ namespace AntDesign
 
         private async Task<bool> CalculateValuesAsync(double clickClient)
         {
-            (double sliderOffset, double sliderLength) = await GetSliderDimensions(Parent._railRef);
+            (double sliderOffset, double sliderLength, _, _) = await GetSliderDimensions(Parent._railRef);
 
             double dragPosition = CalculateNewHandleValue(clickClient, sliderOffset, sliderLength);
             double rightV = dragPosition + _distanceToRightHandle;
@@ -1743,7 +1779,7 @@ namespace AntDesign
                 if (_tooltipRightVisible != TooltipVisible)
                 {
                     _tooltipRightVisible = TooltipVisible;
-                    _toolTipRight.SetVisible(TooltipVisible, true);
+                    _toolTipRight.SetVisible(TooltipVisible);
                 }
                 _tooltipLeftVisible = true;
                 return;
@@ -1752,7 +1788,7 @@ namespace AntDesign
             if (_tooltipLeftVisible != TooltipVisible)
             {
                 _tooltipLeftVisible = TooltipVisible;
-                _toolTipLeft.SetVisible(TooltipVisible, true);
+                _toolTipLeft.SetVisible(TooltipVisible);
             }
             _tooltipRightVisible = true;
         }

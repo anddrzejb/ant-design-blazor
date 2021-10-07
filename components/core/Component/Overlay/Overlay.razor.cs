@@ -256,6 +256,7 @@ namespace AntDesign.Internal
             await Task.Delay(WaitForHideAnimMilliseconds);
             _isOverlayShow = false;
             _isOverlayHiding = false;
+            _preVisible = false;
 
             await Trigger.OnVisibleChange.InvokeAsync(false);
 
