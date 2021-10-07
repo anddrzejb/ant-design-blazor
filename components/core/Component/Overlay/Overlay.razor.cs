@@ -228,7 +228,7 @@ namespace AntDesign.Internal
             {
                 //If Show() method is processing, wait up to 1000 ms
                 //for it to end processing
-                await WaitFor(() => _isOverlayShow);
+                await AsyncHelper.WaitFor(() => _isOverlayShow);
             }
             if (!_isOverlayShow)
             {
@@ -313,12 +313,12 @@ namespace AntDesign.Internal
                 _recurenceGuard++;
 
                 //In ServerSide it may happen that trigger element reference has not yet been retrieved.                    
-                if (!(await WaitFor(() => Trigger.Ref.Id is not null)))
+                if (!(await AsyncHelper.WaitFor(() => Trigger.Ref.Id is not null)))
                 {
                     //Place where Error Boundary could be utilized
                     throw new ArgumentNullException("Trigger.Ref.Id cannot be null when attaching overlay to it.");
                 }
-                if (!(await WaitFor(() => Ref.Id is not null)))
+                if (!(await AsyncHelper.WaitFor(() => Ref.Id is not null)))
                 {
                     Debug.WriteLine("Overlay.Ref.Id is null. Adding overlay stopped.");
                     return;
@@ -349,31 +349,6 @@ namespace AntDesign.Internal
                 await UpdatePosition(overlayLeft, overlayTop);
             }
             _recurenceGuard = 0;
-        }
-
-        /// <summary>
-        /// Will probe a check predicate every given milliseconds until predicate is true or until
-        /// runs out of number of probings.
-        /// </summary>
-        /// <param name="check">A predicate that will be run every time after waitTimeInMilisecondsPerProbing will pass.</param>
-        /// <param name="probings">Maximum number of probings. After this number is reached, the method finishes.</param>
-        /// <param name="waitTimeInMilisecondsPerProbing">How long to wait between each probing.</param>
-        /// <returns>Task</returns>
-        private async Task<bool> WaitFor(Func<bool> check, int probings = 100, int waitTimeInMilisecondsPerProbing = 10)
-        {
-            if (!check())
-            {
-                for (int i = 0; i < probings; i++)
-                {
-                    await Task.Delay(waitTimeInMilisecondsPerProbing);
-                    if (check())
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            return true;
         }
 
         private string GetTransformOrigin()

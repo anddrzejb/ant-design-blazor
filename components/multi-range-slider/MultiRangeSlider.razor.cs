@@ -15,7 +15,6 @@ namespace AntDesign
         //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell        
         //TODO: move WaitFor to a helper
         //TODO: fix multiple js errors on refersh         
-        //TODO: tooltip: when range has focus, toggling tooltip to be visible does not show it
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         //TODO: RangeItem.razor - edges probably should be templates
         //TODO: Tooltip should not be visible when edge is overflowing

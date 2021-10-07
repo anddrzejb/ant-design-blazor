@@ -1518,30 +1518,13 @@ namespace AntDesign
             }
         }
 
-        private async Task<bool> WaitFor(Func<bool> check, int probings = 100, int waitTimeInMilisecondsPerProbing = 10)
-        {
-            if (!check())
-            {
-                for (int i = 0; i < probings; i++)
-                {
-                    await Task.Delay(waitTimeInMilisecondsPerProbing);
-                    if (check())
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            return true;
-        }
-
         private async void OnMouseUp(JsonElement jsonElement)
         {
             bool isMoveInEdgeBoundary = IsMoveWithinBoundary(jsonElement);
             if (!_mouseDown && !_mouseDownOnTrack && isMoveInEdgeBoundary)
             {
                 //force blazor OnMouseDown events to run first
-                await WaitFor(() => _mouseDown | _mouseDownOnTrack);
+                await AsyncHelper.WaitFor(() => _mouseDown | _mouseDownOnTrack);
             }
             _shouldRender = true;
 
