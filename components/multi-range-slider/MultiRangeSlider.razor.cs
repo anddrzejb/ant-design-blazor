@@ -2,13 +2,9 @@
 using Microsoft.AspNetCore.Components;
 using System.Collections.Generic;
 using System.Globalization;
-using Microsoft.AspNetCore.Components.Web;
 using System.Linq;
 using System;
-using AntDesign.JsInterop;
 using System.Threading.Tasks;
-using AntDesign.Select.Internal;
-using System.Reflection;
 
 namespace AntDesign
 {
@@ -21,6 +17,8 @@ namespace AntDesign
         //TODO: fix multiple js errors on refersh 
         //TODO: test with & without tooltip & with forced tooltip
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
+        //TODO: RangeItem.razor - edges probably should be templates
+        //TODO: Tooltip should not be visible when edge is overflowing
         internal const int VerticalOversizedTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isAtfterFirstRender = false;
@@ -29,8 +27,8 @@ namespace AntDesign
         private string _railStyle = "";
         private double _boundaryAdjust = 0;
         private bool _isInitialized;
-        //private double _itemAdjust = 0; //
         private bool _oversized;
+        private bool _orientationHasChanged;
         internal ElementReference _railRef;
         private ElementReference _scrollableAreaRef;
         List<string> _keys = new();
@@ -118,8 +116,11 @@ namespace AntDesign
             get => _vertical;
             set
             {
-                _vertical = value;
-                SetOrientationStyles();
+                if (_vertical != value)
+                {
+                    _orientationHasChanged = true;
+                    _vertical = value;
+                }
             }
         }
 
@@ -132,12 +133,10 @@ namespace AntDesign
                 if (Oversized)
                 {
                     _overflow = "overflow-y: auto;overflow-x: hidden; padding-right: 8px; height: inherit;";
-//                    _railStyle = $"height: calc(100% - {2 * VerticalOversizedTrackAdjust}px);top: {VerticalOversizedTrackAdjust}px;";
                 }
                 else
                 {
                     _overflow = "display: inline;";
-//                    _railStyle = "";
                 }
                 _railStyle = $"height: calc(100% - {2 * VerticalOversizedTrackAdjust}px);top: {VerticalOversizedTrackAdjust}px;";
                 _sizeType = "height";
@@ -146,7 +145,7 @@ namespace AntDesign
             {
                 if (Oversized)
                 {
-                    _overflow = "overflow-x: auto;";
+                    _overflow = "overflow-x: auto; height: inherit;";
                 }
                 else
                 {
@@ -491,7 +490,15 @@ namespace AntDesign
                 .If($"{PreFixCls}-with-marks", () => Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
 
-            SetOrientationStyles();
+
+            if (_orientationHasChanged || !_isInitialized)
+            {
+                SetOrientationStyles();
+                if (_orientationHasChanged && _items.Count > 0)
+                {
+                    _items.ForEach(i => i.SetPositions());
+                }
+            }
             if (Step is not null)
             {
                 if (EqualIsOverlap)
