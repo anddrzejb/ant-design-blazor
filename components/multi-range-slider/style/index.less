@@ -21,8 +21,7 @@
 
   .range-vertical();
 
-  &-with-marks {
-    margin-bottom: 38px;
+  &-with-marks {    
   }
 
   &-rail {
@@ -219,17 +218,16 @@
   &-vertical {
     width: 25px;
     height: 100%;
-    overflow: hidden;
+    //overflow: hidden;
 
     &&.@{multi-range-slider-prefix-cls}-with-marks {
-      width: 100%;
+      //width: 100%;
       //padding-left: 2px;
     }
 
     &-oversized {
-      
-
-
+      overflow: hidden;
+      width: 100%;
     }
 
     .@{multi-range-slider-prefix-cls}-rail {
