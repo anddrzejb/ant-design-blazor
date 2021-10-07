@@ -43,7 +43,7 @@ namespace AntDesign
         private string _customFocusStyle = "";
         private string _focusStyle = "";
         private string _customEdgeBorderStyle = "";
-        private bool _isDataSet;
+        private bool _isDataSet;        
 
         /// <summary>
         /// Used to evaluate if OnAfterChange needs to be called
@@ -248,7 +248,7 @@ namespace AntDesign
                 return;
             }
             _leftValue = value;
-            SetPositions();
+
             if (previousValue != CurrentValue.Item1)
             {
                 CurrentValue = (_leftValue, RightValue);
@@ -258,6 +258,7 @@ namespace AntDesign
             {
                 Parent.OnEdgeMoved.InvokeAsync((range: this, edge: RangeEdge.Left, value: value));
             }
+            SetPositions();
         }
 
         private double _rightValue = double.MaxValue;
@@ -314,7 +315,7 @@ namespace AntDesign
                 return;
             }
             _rightValue = value;
-            SetPositions();
+
             if (previousValue != CurrentValue.Item2)
             {
                 CurrentValue = (LeftValue, _rightValue);
@@ -324,6 +325,7 @@ namespace AntDesign
             {
                 Parent.OnEdgeMoved.InvokeAsync((range: this, edge: RangeEdge.Right, value: value));
             }
+            SetPositions();
         }
 
         private double Clamp(
@@ -1550,7 +1552,7 @@ namespace AntDesign
                 {
                     GapDistance = CalculateGapDistance();
                     AttachedItem.GapDistance = GapDistance;
-                }
+                }                
             }
 #pragma warning disable CS4014 // Does not return anything, fire & forget            
             RaiseOnAfterChangeCallback(() => raiseOnAfterChangeEvent && _valueCache != _value);
@@ -1639,8 +1641,8 @@ namespace AntDesign
                 double leftCandidate = Clamp(leftV, Parent.GetLeftBoundary(Id, RangeEdge.Left, AttachedHandleNo), Parent.GetRightBoundary(Id, RangeEdge.Left, AttachedHandleNo));
                 if (leftCandidate != LeftValue && rightCandidate != RightValue)
                 {
-                    ChangeLeftValue(leftCandidate, LeftValue);
-                    ChangeRightValue(rightCandidate, RightValue);
+                    ChangeLeftValue(leftCandidate, leftV);
+                    ChangeRightValue(rightCandidate, rightV);
                     return true;
                 }
             }
@@ -1844,6 +1846,7 @@ namespace AntDesign
             _rightHandleCssPosition = string.Format(CultureInfo.CurrentCulture, RightHandleStyleFormat, rightHandStyle);
             _trackCssPosition = string.Format(CultureInfo.CurrentCulture, TrackStyleFormat, trackStart, trackSize);
             _leftHandleCssPosition = string.Format(CultureInfo.CurrentCulture, LeftHandleStyleFormat, leftHandStyle);
+            _shouldRender = true;
             StateHasChanged();
         }
 

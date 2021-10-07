@@ -32,7 +32,8 @@
                 foreach(var rangeItemData in Data)
                 {                    
                     int iterator = i;                    
-                    <RangeItem @key=@($"Id_{iterator}") Value="@rangeItemData.Value" ValueChanged="(v) => RangeItemDataChanged(rangeItemData, v)" Data="@rangeItemData"/>
+                    string key = rangeItemData.GetHashCode().ToString();
+                    <RangeItem @key=@key Value="@rangeItemData.Value" ValueChanged="(v) => RangeItemDataChanged(rangeItemData, v)" Data="@rangeItemData"/>
                     i++;
                 }
             }
@@ -41,8 +42,9 @@
                 int i = 0;
                 foreach(var rangeItemValue in Value)
                 {
-                    int iterator = i;                    
-                    <RangeItem @key=@($"Id_{iterator}") Value="@rangeItemValue" ValueChanged="(v) => RangeItemValueChanged(iterator, v)"/>
+                    int iterator = i;
+                    string key = GetOrAddKey(iterator);
+                    <RangeItem @key=@key Value="@rangeItemValue" ValueChanged="(v) => RangeItemValueChanged(iterator, v)"/>
                     i++;
                 }
             }

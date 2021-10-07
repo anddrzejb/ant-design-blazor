@@ -8,6 +8,7 @@ using System;
 using AntDesign.JsInterop;
 using System.Threading.Tasks;
 using AntDesign.Select.Internal;
+using System.Reflection;
 
 namespace AntDesign
 {
@@ -16,7 +17,6 @@ namespace AntDesign
         //TODO: performance - minimize re-renders
 
         //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell
-        //TODO: Usage in form
         //TODO: switch between vertical & horizontal live (animation?)
         //TODO: fix multiple js errors on refersh 
         //TODO: test with & without tooltip & with forced tooltip
@@ -33,6 +33,7 @@ namespace AntDesign
         private bool _oversized;
         internal ElementReference _railRef;
         private ElementReference _scrollableAreaRef;
+        List<string> _keys = new();
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
         internal bool HasAttachedEdges { get; set; }
@@ -307,9 +308,11 @@ namespace AntDesign
             }
         }
 
-        protected IEnumerable<(double, double)> _value;
         private double _visibleMin;
         private double _visibleMax;
+        protected IEnumerable<(double, double)> _value;
+        private IEnumerable<(double, double)> _valueClone = null;
+
         /// <summary>
         /// Get or set the selected values.
         /// </summary>
@@ -319,26 +322,31 @@ namespace AntDesign
             get => _value;
             set
             {
-                if (value != null && _value != null)
+                if (value != null && _valueClone != null)
                 {
-                    var hasChanged = !value.SequenceEqual(_value);
+                    var hasChanged = value.Count() != _valueClone.Count(); //!value.SequenceEqual(_valueClone);
 
                     if (!hasChanged)
                     {
                         return;
                     }
-
-                    _value = value;
+                    if (ChildContent is null)
+                    {
+                        RebuildKeys(value, _valueClone); ;
+                    }
+                    _valueClone = _value.ToArray();
                     _ = OnValueChangeAsync(value);
                 }
-                else if (value != null && _value == null)
+                else if (value != null && _valueClone == null)
                 {
                     _value = value;
+                    _valueClone = _value.ToArray();
                     _ = OnValueChangeAsync(value);
                 }
-                else if (value == null && _value != null)
+                else if (value == null && _valueClone != null)
                 {
                     _value = default;
+                    _valueClone = default;
                     _ = OnValueChangeAsync(value);
                 }
 
@@ -388,7 +396,8 @@ namespace AntDesign
             //TODO: check if _value can be switched ot a List of tuples or other wrapped object, so it is passed as reference to RangeItem and can be used with @bind modifier
             var temp = _value.ToList();
             temp[index] = value;
-            Value = temp;
+            _value = temp;
+            _ = OnValueChangeAsync(temp);
         }
 
 
@@ -558,20 +567,53 @@ namespace AntDesign
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private async void OnMouseDown(MouseEventArgs args)
-        {
-            //_mouseDown = !Disabled;
-        }
-
         private List<RangeItem> _items = new();
         private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries;
 
         internal void AddRangeItem(RangeItem item)
         {
             _items.Add(item);
+            if (_keys.Count < _items.Count)
+            {
+                _keys.Add(Guid.NewGuid().ToString());
+            }
             SortRangeItems();
         }
 
+        internal void RemoveRangeItem(RangeItem item)
+        {
+            int index = _items.IndexOf(item);
+            if (index >= 0)
+            {
+                _items.RemoveAt(index);
+                _keys.RemoveAt(index);
+                SortRangeItems();
+            }
+        }
+
+        private string GetOrAddKey(int index)
+        {
+            if (_keys.Count <= index)
+            {
+                string newKey = Guid.NewGuid().ToString();
+                _keys.Add(newKey);
+                return newKey;
+            }
+            return _keys[index];
+        }
+
+        private void RebuildKeys(IEnumerable<(double, double)> newValues, IEnumerable<(double, double)> oldValues)
+        {
+            if (_isInitialized)
+            {
+                for (int i = _items.Count-1; i >= 0; i--)
+                {
+                    _items[i].Dispose();
+
+                }
+                _keys.Clear();
+            }
+        }
         internal double GetLeftBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandle)
         {
             if (AllowOverlapping)
@@ -753,12 +795,6 @@ namespace AntDesign
             previousItem = _boundaries[previousId];
             previousItem.rightNeighbour = default;
             _boundaries[previousId] = previousItem;
-        }
-
-        internal void RemoveRangeItem(RangeItem item)
-        {
-            _items.Remove(item);
-            SortRangeItems();
         }
 
         internal double GetNearestStep(double value)
