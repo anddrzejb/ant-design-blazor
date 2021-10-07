@@ -1,7 +1,6 @@
 ﻿@namespace AntDesign
 @inherits AntInputComponentBase<(double, double)>
 @using Microsoft.AspNetCore.Components.Web
-@* //TODO: consider using templates for edges to avoid repetition *@
 <div class="@ClassMapper.Class" id="@Id" @ref="Ref">
     <div class="ant-multi-range-slider-track ant-multi-range-slider-track-1 @_focusClass" style="z-index: 899;@(_trackCssPosition+_customTrackStyle+_focusStyle)" 
         tabindex="0"
@@ -22,75 +21,36 @@
             </div>
         }
     </div>    
-    @if (Parent.HasTooltip)
+    @if (HasTooltip)
     {
         <Tooltip Title="@Parent.TipFormatter(_leftValue)" Style="display: inline;" Visible="_tooltipLeftVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLeft">
             <Unbound>
-                <div tabindex="0" 
-                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1@_attachedLeftHandleClass" 
-                     role="slider" 
-                     aria-disabled="@Disabled.ToString()" 
-                     aria-valuenow="30" 
-                     aria-valuemin="0" 
-                     aria-valuemax="100" 
-                     style="@(_leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle)" 
-                     @ref="@context.Current" 
-                     @onmousedown="e => OnMouseDownEdge(e, false)" @onmousedown:stopPropagation
-                     @onkeydown="e => OnKeyDown(e, RangeEdge.Left)" @onkeydown:stopPropagation @onkeydown:preventDefault
-                     @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
-                     @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
-                </div>
+                @edge(new EdgeTemplate(context, Parent.Min, Parent.Max, Disabled, RangeEdge.Left, _leftValue, 
+                    "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedLeftHandleClass,
+                    _leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle,
+                    _leftHandleFill
+                ))
             </Unbound>
         </Tooltip>
         <Tooltip Title="@Parent.TipFormatter(_rightValue)" Style="display: inline;" Visible="_tooltipRightVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipRight">
             <Unbound>
-                <div tabindex="0" 
-                     class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2@_attachedRightHandleClass" 
-                     role="slider" 
-                     aria-disabled="@Disabled.ToString()" 
-                     aria-valuenow="30" 
-                     aria-valuemin="0" 
-                     aria-valuemax="100" 
-                     style="@(_rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle)" 
-                     @ref="@context.Current" 
-                     @onmousedown="e => OnMouseDownEdge(e, true)" @onmousedown:stopPropagation
-                     @onkeydown="e => OnKeyDown(e, RangeEdge.Right)" @onkeydown:stopPropagation @onkeydown:preventDefault
-                     @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
-                     @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
-                </div>
+                @edge(new EdgeTemplate(context, Parent.Min, Parent.Max, Disabled, RangeEdge.Right, _rightValue, 
+                    "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedRightHandleClass, 
+                    _rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle, _rightHandleFill
+                ))
             </Unbound>
         </Tooltip>
     }
     else
     {
-        <div tabindex="0" 
-             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-1@_attachedLeftHandleClass" 
-             role="slider" 
-             aria-disabled="@Disabled.ToString()" 
-             aria-valuenow="30" 
-             aria-valuemin="@Parent.Min" 
-             aria-valuemax="@Parent.Max" 
-             style="@(_leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle)" 
-             @ref="_leftHandle" 
-             @onmousedown="e => OnMouseDownEdge(e, false)" @onmousedown:stopPropagation
-             @onkeydown="e => OnKeyDown(e, RangeEdge.Left)" @onkeydown:stopPropagation @onkeydown:preventDefault
-             @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
-             @ondblclick="e => OnDoubleClick(RangeEdge.Left)">@_leftHandleFill
-        </div>
-        <div tabindex="0" 
-             class="ant-multi-range-slider-handle ant-multi-range-slider-handle-2@_attachedRightHandleClass" 
-             role="slider" 
-             aria-disabled="@Disabled.ToString()" 
-             aria-valuenow="30" 
-             aria-valuemin="0" 
-             aria-valuemax="100" 
-             style="@(_rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle)" 
-             @ref="_rightHandle" 
-             @onmousedown="(e) => OnMouseDownEdge(e, true)" @onmousedown:stopPropagation
-             @onkeydown="e => OnKeyDown(e, RangeEdge.Right)" @onkeydown:stopPropagation @onkeydown:preventDefault
-             @onkeyup=OnKeyUp @onkeyup:stopPropagation @onkeyup:preventDefault
-             @ondblclick="e => OnDoubleClick(RangeEdge.Right)">@_rightHandleFill
-        </div>
+        @edge(new EdgeTemplate(new ForwardRef() { Current = _leftHandle}, Parent.Min, Parent.Max, Disabled, RangeEdge.Left, _leftValue, 
+            "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedLeftHandleClass,
+            _leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle, _leftHandleFill
+        ))
+        @edge(new EdgeTemplate(new ForwardRef() { Current = _rightHandle}, Parent.Min, Parent.Max, Disabled, RangeEdge.Right, _rightValue, 
+            "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedRightHandleClass,
+            _rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle, _rightHandleFill
+        ))
     }
 
 </div>
@@ -101,4 +61,62 @@
 
     RenderFragment _rightHandleFill;
     RenderFragment _leftHandleFill;
+
+    internal class EdgeTemplate
+    {
+        internal EdgeTemplate(ForwardRef reference, double min, double max, bool disabled, 
+            RangeEdge edge, double value, string cssClass, string style, RenderFragment childContent)
+        {
+            Ref = reference;
+            Min = min;
+            Max = max;
+            Disabled = disabled;
+            Edge = edge;
+            Value = value;
+            CssClass = cssClass;
+            Style = style;
+            ChildContent = childContent;
+        }
+
+        internal ForwardRef Ref { get; set; }
+        internal double Min { get; set; }
+        internal double Max { get; set; }
+        internal bool Disabled { get; set; }
+        internal RangeEdge Edge { get; set; }
+        internal double Value { get; set; }
+        internal string CssClass { get; set; }
+        internal string Style { get; set; }
+        internal RenderFragment ChildContent { get; set; }
+    }
+
+
+    internal RenderFragment<EdgeTemplate> edge => (data) => builder =>
+    {
+        builder.OpenElement(1, "div");
+        builder.AddAttribute(2, "tablindex", 0);
+        builder.AddAttribute(3, "class", data.CssClass);
+        builder.AddAttribute(4, "role", "slider");
+        builder.AddAttribute(5, "aria-disabled", data.Disabled.ToString());
+        builder.AddAttribute(6, "aria-valuenow", data.Value);
+        builder.AddAttribute(7, "aria-valuemin", data.Min);
+        builder.AddAttribute(8, "aria-valuemax", data.Max);
+        builder.AddAttribute(9, "style", data.Style);
+
+        builder.AddAttribute(10, "onmousedown", RangeItem.CallbackFactory.Create<MouseEventArgs>(this, (args) => OnMouseDownEdge(args, data.Edge)));
+        builder.AddEventStopPropagationAttribute(11, "onmousedown", true);
+
+        builder.AddAttribute(13, "onkeydown", RangeItem.CallbackFactory.Create<KeyboardEventArgs>(this, async (args) => await OnKeyDown(args, data.Edge)));
+        builder.AddEventPreventDefaultAttribute(14, "onkeydown", true);
+        builder.AddEventStopPropagationAttribute(15, "onkeydown", true);
+
+        builder.AddAttribute(16, "ondblclick", RangeItem.CallbackFactory.Create<MouseEventArgs>(this, args => OnDoubleClick(data.Edge)));
+
+        builder.AddAttribute(20, "onkeyup", RangeItem.CallbackFactory.Create(this, OnKeyUp));
+        builder.AddEventPreventDefaultAttribute(21, "onkeyup", true);
+        builder.AddEventStopPropagationAttribute(22, "onkeyup", true);
+
+        builder.AddContent(30, data.ChildContent);
+        builder.AddElementReferenceCapture(99, r => data.Ref.Current = r);
+        builder.CloseElement();
+    };
 }

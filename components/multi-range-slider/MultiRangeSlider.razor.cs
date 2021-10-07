@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace AntDesign
@@ -13,12 +14,11 @@ namespace AntDesign
         //TODO: performance - minimize re-renders
 
         //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell        
-        //TODO: move WaitFor to a helper
         //TODO: fix multiple js errors on refersh         
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
-        //TODO: RangeItem.razor - edges probably should be templates
         //TODO: Tooltip should not be visible when edge is overflowing
-        internal const int VerticalOversizedTrackAdjust = 14;
+        //TODO: add demo for date/time
+        internal const int VerticalTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isAtfterFirstRender = false;
         private string _overflow = "display: inline;";
@@ -31,6 +31,7 @@ namespace AntDesign
         internal ElementReference _railRef;
         private ElementReference _scrollableAreaRef;
         List<string> _keys = new();
+
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
         internal bool HasAttachedEdges { get; set; }
@@ -133,7 +134,7 @@ namespace AntDesign
                 {
                     _overflow = "display: inline;";
                 }
-                _railStyle = $"height: calc(100% - {2 * VerticalOversizedTrackAdjust}px);top: {VerticalOversizedTrackAdjust}px;";
+                _railStyle = $"height: calc(100% - {2 * VerticalTrackAdjust}px);top: {VerticalTrackAdjust}px;";
                 _sizeType = "height";
             }
             else
@@ -222,8 +223,51 @@ namespace AntDesign
             }
         }
 
+        private bool _hasTooltipChanged;
         [Parameter]
-        public bool HasTooltip { get; set; } = true;
+        public bool HasTooltip
+        {
+            get => _hasTooltip;
+            set
+            {
+                if (_hasTooltip != value)
+                {
+                    _hasTooltipChanged = true;
+                    _hasTooltip = value;
+                }
+            }
+        }
+
+        bool _tooltipPlacementChanged;
+        [Parameter]
+        public Placement TooltipPlacement
+        {
+            get => _tooltipPlacement;
+            set
+            {
+                if (_tooltipPlacement != value)
+                {
+                    _tooltipPlacementChanged = true;
+                    _tooltipPlacement = value;
+                }
+            }
+        }
+
+        bool _tooltipVisibleChanged;
+        [Parameter]
+        public bool TooltipVisible
+        {
+            get => _tooltipVisible;
+            set
+            {
+                if (_tooltipVisible != value)
+                {
+                    _tooltipVisibleChanged = true;
+                    _tooltipVisible = value;
+                }
+            }
+        }
+
 
         /// <summary>
         /// Slider will pass its value to tipFormatter, and display its value in Tooltip
@@ -403,6 +447,18 @@ namespace AntDesign
             _isInitialized = true;
         }
 
+        Dictionary<string, MethodInfo> _methods = new();
+        private MethodInfo GetRangeItemMethod(string methodName)
+        {
+            MethodInfo method;
+            if (!_methods.TryGetValue(methodName, out method))
+            {
+                method = typeof(RangeItem).GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
+                _methods.Add(methodName, method);
+            }
+            return method;
+        }
+
         protected override void OnParametersSet()
         {
             base.OnParametersSet();
@@ -417,15 +473,8 @@ namespace AntDesign
                 .If($"{PreFixCls}-with-marks", () => Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
 
+            ForwardChangesToChildren();
 
-            if (_orientationHasChanged || !_isInitialized)
-            {
-                SetOrientationStyles();
-                if (_orientationHasChanged && _items.Count > 0)
-                {
-                    _items.ForEach(i => i.SetPositions());
-                }
-            }
             if (Step is not null)
             {
                 if (EqualIsOverlap)
@@ -447,6 +496,39 @@ namespace AntDesign
                 {
                     ItemAdjust = 0;
                 }
+            }
+        }
+
+        private void ForwardChangesToChildren()
+        {
+            List<MethodInfo> delegatesToExecute = new();
+            if (_orientationHasChanged || !_isInitialized)
+            {
+                SetOrientationStyles();
+                if (_orientationHasChanged && _items.Count > 0)
+                {
+                    delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetPositions)));
+                }
+                _orientationHasChanged = false;
+            }
+            if (_isInitialized && _hasTooltipChanged && _items.Count > 0)
+            {
+                delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetHasTooltipFromParent)));
+                _hasTooltipChanged = false;
+            }
+            if (_isInitialized && _tooltipPlacementChanged && _items.Count > 0)
+            {
+                delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetTooltipPacementFromParent)));
+                _tooltipPlacementChanged = false;
+            }
+            if (_isInitialized && _tooltipVisibleChanged && _items.Count > 0)
+            {
+                delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetTooltipVisibleFromParent)));
+                _tooltipVisibleChanged = false;
+            }
+            if (delegatesToExecute.Count > 0)
+            {
+                _items.ForEach(i => delegatesToExecute.ForEach(d => d.Invoke(i, null)));
             }
         }
 
@@ -540,7 +622,7 @@ namespace AntDesign
         {
             if (_isInitialized)
             {
-                for (int i = _items.Count-1; i >= 0; i--)
+                for (int i = _items.Count - 1; i >= 0; i--)
                 {
                     _items[i].Dispose();
 
@@ -731,6 +813,37 @@ namespace AntDesign
             _boundaries[previousId] = previousItem;
         }
 
+        internal void GetAttachedInOrder(out RangeItem left, out RangeItem right)
+        {
+            if (ItemRequestingAttach.AttachedHandleNo != ItemRespondingToAttach.AttachedHandleNo //same edges - no way to overlap
+                && AllowOverlapping)
+            {
+                if (ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
+                {
+                    right = ItemRequestingAttach;
+                    left = ItemRespondingToAttach;
+                }
+                else
+                {
+                    right = ItemRespondingToAttach;
+                    left = ItemRequestingAttach;
+                }
+            }
+            else
+            {
+                if (ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
+                {
+                    left = ItemRequestingAttach;
+                    right = ItemRespondingToAttach;
+                }
+                else
+                {
+                    left = ItemRespondingToAttach;
+                    right = ItemRequestingAttach;
+                }
+            }
+        }
+
         internal double GetNearestStep(double value)
         {
             if (Step.HasValue && (Marks == null || Marks.Length == 0))
@@ -757,9 +870,9 @@ namespace AntDesign
             {
                 if (Reverse)
                 {
-                    return GetOversizedVerticalCoordinate(1 - (key - Min) / MinMaxDelta);
+                    return GetVerticalCoordinate(1 - (key - Min) / MinMaxDelta);
                 }
-                return GetOversizedVerticalCoordinate((key - Min) / MinMaxDelta);
+                return GetVerticalCoordinate((key - Min) / MinMaxDelta);
             }
             if (Reverse)
             {
@@ -785,6 +898,9 @@ namespace AntDesign
         private RangeItem _focusedItem;
         private bool _vertical;
         private bool _expandStep;
+        private bool _hasTooltip = true;
+        private Placement _tooltipPlacement;
+        private bool _tooltipVisible;
 
         internal void SetRangeItemFocus(RangeItem item, bool isFocused)
         {
@@ -807,30 +923,30 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// When MultiRangeSlider is Vertical and is Oversized, special calculations are made, 
+        /// When MultiRangeSlider is Vertical, special calculations are made, 
         /// there is a visual issue: Min and Max position are overflowing, so when an edge is set
         /// in the Min/Max, half of the edge is not visible due to overflowing set to hidden.
         /// 
-        /// Current solution: make track smaller by a <see cref="VerticalOversizedTrackAdjust">number of pixels</see>.
+        /// Current solution: make track smaller by a <see cref="VerticalTrackAdjust">number of pixels</see>.
         /// As a result, a relative calculation has to be performed to evaluate edge positions. 
         /// </summary>
         /// <param name="nominalPercentage">The percentage calculated for a point as it would be 
         /// used without compensating for visual issue.
         /// </param>
         /// <returns>css calc formula</returns>
-        /// <see cref="GetOversizedVerticalTrackSize"/>
-        internal static string GetOversizedVerticalCoordinate(double nominalPercentage)
+        /// <see cref="GetVerticalTrackSize"/>
+        internal static string GetVerticalCoordinate(double nominalPercentage)
         {
-            var skew = GetOversizedVerticalSkew(nominalPercentage);
-            return $"calc({Formatter.ToPercentWithoutBlank(nominalPercentage)} - ({skew} * {VerticalOversizedTrackAdjust}px))";
+            var skew = GetVerticalSkew(nominalPercentage);
+            return $"calc({Formatter.ToPercentWithoutBlank(nominalPercentage)} - ({skew} * {VerticalTrackAdjust}px))";
         }
 
         /// <summary>
-        /// When MultiRangeSlider is Vertical and is Oversized, special calculations are made, 
+        /// When MultiRangeSlider is Vertical, special calculations are made, 
         /// there is a visual issue: Min and Max position are overflowing, so when an edge is set
         /// in the Min/Max, half of the edge is not visible due to overflowing set to hidden.
         /// 
-        /// Calculates the percentage of <see cref="VerticalOversizedTrackAdjust">number of pixels</see>.
+        /// Calculates the percentage of <see cref="VerticalTrackAdjust">number of pixels</see>.
         /// It will be applied to css calc formula.
         /// </summary>
         /// <param name="nominalPercentage">The percentage calculated for a point as it would be 
@@ -843,7 +959,7 @@ namespace AntDesign
         /// 3. So if calculated from 0% => -100%, 1% => -98%, 2% => -96%, ... 50% => 0%, ..., 99% => 98%, 100% => 100%
         /// </param>
         /// <returns>percentage as fraction</returns>
-        private static double GetOversizedVerticalSkew(double nominalPercentage)
+        private static double GetVerticalSkew(double nominalPercentage)
         {
             double skew;
             if (nominalPercentage < 50)
@@ -859,28 +975,28 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// When MultiRangeSlider is Vertical and is Oversized, special calculations are made, 
+        /// When MultiRangeSlider is Vertical, special calculations are made, 
         /// there is a visual issue: Min and Max position are overflowing, so when an edge is set
         /// in the Min/Max, half of the edge is not visible due to overflowing set to hidden.
         /// 
-        /// Current solution: make track smaller by a <see cref="VerticalOversizedTrackAdjust">number of pixels</see>.
+        /// Current solution: make track smaller by a <see cref="VerticalTrackAdjust">number of pixels</see>.
         /// As a result, a relative calculation has to be performed to evaluate track size. 
         /// </summary>
         /// <param name="leftHandPercentage">The percentage calculated for the left edge as it would be 
-        /// used without compensating for visual issu.
+        /// used without compensating for visual issue.
         /// </param>
         /// <param name="rightHandPercentage">The percentage calculated for the right edge it would be 
-        /// used without compensating for visual issu.
+        /// used without compensating for visual issue.
         /// </param>/// 
         /// <returns>css calc formula</returns>
-        /// <see cref="GetOversizedVerticalCoordinate"/>
-        internal static string GetOversizedVerticalTrackSize(double leftHandPercentage, double rightHandPercentage)
+        /// <see cref="GetVerticalCoordinate"/>
+        internal static string GetVerticalTrackSize(double leftHandPercentage, double rightHandPercentage)
         {
-            var skewLeft = GetOversizedVerticalSkew(leftHandPercentage);
-            var skewRight = GetOversizedVerticalSkew(rightHandPercentage);
+            var skewLeft = GetVerticalSkew(leftHandPercentage);
+            var skewRight = GetVerticalSkew(rightHandPercentage);
 
-            return $"calc(({Formatter.ToPercentWithoutBlank(rightHandPercentage)} - ({skewRight} * {VerticalOversizedTrackAdjust}px)) " +
-                   $"- ({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - ({skewLeft} * {VerticalOversizedTrackAdjust}px)))";
+            return $"calc(({Formatter.ToPercentWithoutBlank(rightHandPercentage)} - ({skewRight} * {VerticalTrackAdjust}px)) " +
+                   $"- ({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - ({skewLeft} * {VerticalTrackAdjust}px)))";
         }
 
         private string GetBasePosition() => Vertical ? "bottom" : "left";

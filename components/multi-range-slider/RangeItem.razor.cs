@@ -40,8 +40,9 @@ namespace AntDesign
         private string _customFocusStyle = "";
         private string _focusStyle = "";
         private string _customEdgeBorderStyle = "";
-        private bool _isDataSet;        
+        private bool _isDataSet;
 
+        protected static readonly EventCallbackFactory CallbackFactory = new EventCallbackFactory();
         /// <summary>
         /// Used to evaluate if OnAfterChange needs to be called
         /// </summary>
@@ -193,16 +194,23 @@ namespace AntDesign
         [Parameter]
         public bool Disabled { get; set; }
 
-        /// <summary>
-        /// Whether the thumb can drag over tick only
-        /// </summary>
+        private bool _hasToolTip = true;
+        private bool _hasToolTipSet;
+
         [Parameter]
-        public bool Dots { get; set; }
+        public bool HasTooltip
+        {
+            get => _hasToolTip;
+            set
+            {
+                _hasToolTip = value;
+                _hasToolTipSet = true;
+            }
+        }
 
         /// <summary>
         /// The maximum value the slider can slide to
         /// </summary>
-
         public double Max => Parent.Max;
 
         /// <summary>
@@ -351,13 +359,23 @@ namespace AntDesign
         [Parameter]
         public EventCallback<(double, double)> OnChange { get; set; }
 
+        bool _tooltipPlacementSet;
         [Parameter]
-        public Placement TooltipPlacement { get; set; }
+        public Placement TooltipPlacement
+        {
+            get => _tooltipPlacement;
+            set
+            {
+                _tooltipPlacementSet = true;
+                _tooltipPlacement = value;
+            }
+        }
 
         /// <summary>
         /// If true, Tooltip will show always, or it will not show anyway, even if dragging or hovering.
         /// </summary>
         private bool _tooltipVisible;
+        private bool _tooltipVisibleSet;
 
         private bool _tooltipRightVisible;
         private bool _tooltipLeftVisible;
@@ -368,6 +386,7 @@ namespace AntDesign
             get { return _tooltipVisible; }
             set
             {
+                _tooltipVisibleSet = true;
                 if (_tooltipVisible != value)
                 {
                     _tooltipVisible = value;
@@ -381,12 +400,6 @@ namespace AntDesign
                 }
             }
         }
-
-        /// <summary>
-        /// The DOM container of the Tooltip, the default behavior is to create a div element in body.
-        /// </summary>
-        [Parameter]
-        public object GetTooltipPopupContainer { get; set; }
 
         [Parameter]
         public string Description { get; set; }
@@ -481,7 +494,51 @@ namespace AntDesign
             base.OnInitialized();
             Parent.AddRangeItem(this);
             SetPositions();
+            SetHasTooltipFromParent();
+            SetTooltipPacementFromParent();
+            SetTooltipVisibleFromParent();
         }
+
+        internal void SetHasTooltipFromParent()
+        {
+            if (!_hasToolTipSet)
+            {
+                _hasToolTip = Parent.HasTooltip;
+            }
+        }
+
+        internal void SetTooltipPacementFromParent()
+        {
+            if (!_tooltipPlacementSet)
+            {
+                _tooltipPlacement = Parent.TooltipPlacement;
+            }
+        }
+
+        internal void SetTooltipVisibleFromParent()
+        {
+            if (!_tooltipVisibleSet)
+            {
+                _tooltipVisible = Parent.TooltipVisible;
+                if (!_mouseDown)
+                {
+                    _tooltipRightVisible = _tooltipVisible;
+                    _tooltipLeftVisible = _tooltipVisible;
+                    if (_tooltipVisible)
+                    {
+                        InvokeAsync(async() => await _toolTipLeft.Show());
+                        InvokeAsync(async () => await _toolTipRight.Show());
+                    }
+                    else
+                    {
+                        InvokeAsync(async () => await _toolTipLeft.Hide());
+                        InvokeAsync(async () => await _toolTipRight.Hide());
+                    }
+                }
+            }
+        }
+
+
         private bool _shouldRender = true;
         protected override bool ShouldRender()
         {
@@ -515,7 +572,6 @@ namespace AntDesign
                     ApplyData(true);
                 }
                 if (!dict.ContainsKey(nameof(Value)))
-                //if (!dict.ContainsKey(nameof(Value)))
                 {
                     (double, double) defaultValue = parameters.GetValueOrDefault(nameof(DefaultValue), (0d, 0d));
                     LeftValue = defaultValue.Item1;
@@ -618,7 +674,6 @@ namespace AntDesign
                     _customTrackStyle = _colorAsString;
                     _customEdgeBorderStyle = GetColorStyle(_color, "border-color");
                 }
-                //_focusStyle = _customTrackStyle;
                 if (!string.IsNullOrWhiteSpace(FocusColor.Value.ToString()) || !string.IsNullOrWhiteSpace(FocusBorderColor.Value.ToString()))
                 {
                     _customFocusStyle = _focusBorderColorAsString + _focusColorAsString;
@@ -719,7 +774,7 @@ namespace AntDesign
             }
         }
 
-        private async Task OnKeyUp(KeyboardEventArgs e)
+        private Task OnKeyUp(KeyboardEventArgs e)
         {
             if (OnAfterChange.HasDelegate || Parent.OnAfterChange.HasDelegate || (_isDataSet && Data.OnAfterChange.HasDelegate))
             {
@@ -738,6 +793,7 @@ namespace AntDesign
                 RaiseOnAfterChangeCallback(() => raiseEvent && _valueCache != _value);
 #pragma warning restore CS4014 // Does not return anything, fire & forget
             }
+            return Task.CompletedTask;
 
         }
 
@@ -1303,7 +1359,7 @@ namespace AntDesign
             RangeItem left = null, right = null;
             if (Parent.OnEdgeDetaching is not null || Parent.OnEdgeDetached.HasDelegate)
             {
-                GetAttachedInOrder(out left, out right);
+                Parent.GetAttachedInOrder(out left, out right);
                 if (Parent.OnEdgeDetaching is not null && !Parent.OnEdgeDetaching.Invoke((left, right)))
                 {
                     return false;
@@ -1356,39 +1412,6 @@ namespace AntDesign
             return true;
         }
 
-        //TODO: probably should be MultiRangeSlider method
-        private void GetAttachedInOrder(out RangeItem left, out RangeItem right)
-        {
-            if (Parent.ItemRequestingAttach.AttachedHandleNo != Parent.ItemRespondingToAttach.AttachedHandleNo //same edges - no way to overlap
-                && Parent.AllowOverlapping)
-            {
-                double rightValue, leftValue;
-                if (Parent.ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
-                {
-                    right = Parent.ItemRequestingAttach;
-                    left = Parent.ItemRespondingToAttach;
-                }
-                else
-                {
-                    right = Parent.ItemRespondingToAttach;
-                    left = Parent.ItemRequestingAttach;
-                }
-            }
-            else
-            {
-                if (Parent.ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
-                {
-                    left = Parent.ItemRequestingAttach;
-                    right = Parent.ItemRespondingToAttach;
-                }
-                else
-                {
-                    left = Parent.ItemRespondingToAttach;
-                    right = Parent.ItemRequestingAttach;
-                }
-            }
-        }
-
         private static void ResetNotOverlapping(RangeItem item, string currentRangeId)
         {
             if (item is not null)
@@ -1428,7 +1451,7 @@ namespace AntDesign
 
             //evaluate clicked position in respect to each edge
             _mouseDownOnTrack = !Disabled && !Parent.Disabled;
-            (double sliderOffset, double sliderLength, double sliderWidth, double sliderHeight) 
+            (double sliderOffset, double sliderLength, double sliderWidth, double sliderHeight)
                 = await GetSliderDimensions(Parent._railRef);
             _trackedClientWidth = sliderWidth;
             sliderHeight = _trackedClientHeight;
@@ -1447,12 +1470,12 @@ namespace AntDesign
         private double _trackedClientWidth;
         private double _trackedClientHeight;
 
-        private void OnMouseDownEdge(MouseEventArgs args, bool right)
+        private void OnMouseDownEdge(MouseEventArgs args, RangeEdge edge)
         {
             _mouseDown = !Disabled && !Parent.Disabled;
             SetFocus(true);
             Parent.SetRangeItemFocus(this, true);
-            _right = right;
+            _right = edge == RangeEdge.Right;
             _initialLeftValue = _leftValue;
             _initialRightValue = _rightValue;
             _trackedClientX = args.ClientX;
@@ -1828,10 +1851,10 @@ namespace AntDesign
             //TODO: consider using delegates
             if (Parent.Vertical)
             {
-                rightHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(rightHandPercentage);
-                leftHandStyle = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage);
-                trackStart = MultiRangeSlider.GetOversizedVerticalCoordinate(leftHandPercentage - trackStartAdjust);
-                trackSize = MultiRangeSlider.GetOversizedVerticalTrackSize(leftHandPercentage - trackStartAdjust, rightHandPercentage + (trackSizeAdjust - trackStartAdjust));
+                rightHandStyle = MultiRangeSlider.GetVerticalCoordinate(rightHandPercentage);
+                leftHandStyle = MultiRangeSlider.GetVerticalCoordinate(leftHandPercentage);
+                trackStart = MultiRangeSlider.GetVerticalCoordinate(leftHandPercentage - trackStartAdjust);
+                trackSize = MultiRangeSlider.GetVerticalTrackSize(leftHandPercentage - trackStartAdjust, rightHandPercentage + (trackSizeAdjust - trackStartAdjust));
             }
             else
             {
@@ -1870,6 +1893,7 @@ namespace AntDesign
         private MultiRangeSlider _parent;
         private bool _hasAttachedEdgeWithGap;
         private bool _hasAttachedEdge;
+        private Placement _tooltipPlacement;
 
         /// <summary>
         /// Gets or sets the value of the input. This should be used with two-way binding.
@@ -1902,4 +1926,6 @@ namespace AntDesign
             return value;
         }
     }
+
+
 }
