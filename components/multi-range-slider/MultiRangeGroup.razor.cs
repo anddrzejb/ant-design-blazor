@@ -12,18 +12,38 @@ namespace AntDesign
         private const string PreFixCls = "ant-multi-range-group";
         private List<MultiRangeSlider> _items = new();
         List<string> _keys = new();
-        internal double _markHeight = 0;
+        internal double _markSize = 0;
 
         /// <summary>
         /// Used for rendering select options manually.
         /// </summary>
-        [Parameter] public RenderFragment ChildContent { get; set; }
+        [Parameter] 
+        public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Height is only used when <see cref="Vertical"/>. 
+        /// Examples: "100px", "45%", "21vh"
+        /// </summary>
+        [Parameter]
+        public string Height { get; set; }
 
         /// <summary>
         /// Tick mark of Slider, type of key must be number, and must in closed interval [min, max], each mark can declare its own style
         /// </summary>
         [Parameter]
         public RangeItemMark[] Marks { get; set; }
+
+        /// <summary>
+        /// reverse the component
+        /// </summary>
+        [Parameter]
+        public bool Reverse { get; set; }
+
+        /// <summary>
+        /// If true, the slider will be vertical.
+        /// </summary>
+        [Parameter]
+        public bool Vertical { get; set; }
 
         internal bool IsFirst(MultiRangeSlider item)
         {
@@ -32,12 +52,15 @@ namespace AntDesign
                 return false;
             }
             return item.Id == _items[0].Id;
-        }
+        }        
 
-        protected override void OnInitialized()
+        protected override void OnParametersSet()
         {
             ClassMapper.Clear()
-                .Add(PreFixCls);
+                .Add(PreFixCls)
+                .If($"{PreFixCls}-vertical", () => Vertical);
+
+            base.OnParametersSet();
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -46,12 +69,37 @@ namespace AntDesign
             {
                 var firstTrackDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, _items.First()._railRef);
                 var lastTrackDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, _items.Last()._railRef);
-                _markHeight = (lastTrackDom.AbsoluteTop + lastTrackDom.ClientHeight) - firstTrackDom.AbsoluteTop;
-                DebugHelper.WriteLine($"Calculated height: {_markHeight}");
+                if (Vertical)
+                {
+                    _markSize = (lastTrackDom.AbsoluteLeft + lastTrackDom.ClientWidth) - firstTrackDom.AbsoluteLeft; 
+                }
+                else
+                {
+                    _markSize = (lastTrackDom.AbsoluteTop + lastTrackDom.ClientHeight) - firstTrackDom.AbsoluteTop;
+                }
+                //TODO: check if needed
                 await InvokeAsync(StateHasChanged);
 
             }
             await base.OnAfterRenderAsync(firstRender);
+        }
+
+        internal string GetMarkSizeStyle()
+        {
+            if (Vertical)
+            {
+                return $"width: {_markSize}px;";
+            }
+            return $"height: {_markSize}px;";
+        }
+
+        private string GetHeight()
+        {
+            if (Vertical && !string.IsNullOrWhiteSpace(Height))
+            {
+                return $"height: {Height};";
+            }
+            return "";
         }
 
         internal bool IsLast(MultiRangeSlider item)
@@ -69,6 +117,9 @@ namespace AntDesign
             {
                 item.SetMarksFromParent(Marks);
             }
+            item.SetReverseFromParent(Reverse);
+            item.SetVerticalFromParent(Vertical);
+
             _items.Add(item);
             if (_keys.Count < _items.Count)
             {

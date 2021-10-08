@@ -1,6 +1,6 @@
 ﻿@namespace AntDesign
 @inherits AntDomComponentBase
-<div class="@ClassMapper.Class" id="@Id">
+<div class="@ClassMapper.Class" id="@Id" style="@(GetHeight() + Style)">
     <CascadingValue Value="@this" Name="RangeGroup" IsFixed>
         @ChildContent
     </CascadingValue>

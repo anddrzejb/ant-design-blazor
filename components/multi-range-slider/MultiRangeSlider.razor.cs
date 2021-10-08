@@ -484,6 +484,8 @@ namespace AntDesign
                 .If($"{PreFixCls}-vertical", () => Vertical)
                 .If($"{PreFixCls}-vertical-oversized", () => Vertical && Oversized)
                 .If($"{PreFixCls}-with-marks", () => Marks != null)
+                .If($"{PreFixCls}-group", () => Parent is not null)
+                .If($"{PreFixCls}-group-last-child", () => Parent is not null && Parent.IsLast(this))
                 .If($"{PreFixCls}-rtl", () => RTL);
 
             ForwardChangesToChildren();
@@ -656,6 +658,8 @@ namespace AntDesign
         }
 
         internal void SetMarksFromParent(RangeItemMark[] marks) => _marks = marks;
+        internal void SetVerticalFromParent(bool vertical) => Vertical = vertical;
+        internal void SetReverseFromParent(bool reverse) => Reverse = reverse;
 
         internal double GetLeftBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandle)
         {
