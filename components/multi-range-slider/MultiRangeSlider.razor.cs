@@ -147,7 +147,7 @@ namespace AntDesign
             {
                 if (Oversized)
                 {
-                    _overflow = "overflow-x: auto; height: inherit;";
+                    _overflow = "overflow-x: auto; height: inherit;" + (HasTooltip ? "padding-top: 40px;" : ""); //padding-top needed, otherwise tooltips are not visible
                 }
                 else
                 {
@@ -916,12 +916,13 @@ namespace AntDesign
         private string _trackSize = "";
         private string GetRangeFullSize()
         {
-            if (Min >= VisibleMin && Max <= VisibleMax)
+            if (!Oversized)
             {
                 return "";
             }
             else
             {
+                //DebugHelper.WriteLine($" {_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%;");
                 return $"{_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%;";
             }
         }
