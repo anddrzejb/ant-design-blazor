@@ -22,6 +22,7 @@
   .range-vertical();
 
   &-with-marks {    
+    margin-bottom: 38px; //without margin, the marks are obstructed by elements below the marks
   }
 
   &-rail {
@@ -218,11 +219,13 @@
   &-vertical {
     width: 25px;
     height: 100%;
-    //overflow: hidden;
+    overflow-y: clip; //needs to be here, otherwise can create a scrollbar when multiple ranges are used; side-effect - hides marks labels (if exist)
 
     &&.@{multi-range-slider-prefix-cls}-with-marks {
       //width: 100%;
       //padding-left: 2px;
+      margin-bottom: unset;
+      margin-right: 48px; //needed, otherwise marks are hidden
     }
 
     &-oversized {

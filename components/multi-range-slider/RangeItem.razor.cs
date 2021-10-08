@@ -613,7 +613,7 @@ namespace AntDesign
                 .Add($"{PreFixCls}-item")
                 .If($"{PreFixCls}-disabled", () => Disabled || _parent.Disabled)
                 .If($"{PreFixCls}-vertical", () => Parent.Vertical)
-                .If($"{PreFixCls}-with-marks", () => Parent.Marks != null)
+                //.If($"{PreFixCls}-with-marks", () => Parent.Marks != null)
                 .If($"{PreFixCls}-rtl", () => RTL);
 
             if (_isInitialized)

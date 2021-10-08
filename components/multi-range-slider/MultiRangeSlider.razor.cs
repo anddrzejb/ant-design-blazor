@@ -16,7 +16,7 @@ namespace AntDesign
         //TODO: customize scrollbars: https://www.youtube.com/watch?v=lvKK2fs6h4I&t=36s&ab_channel=KevinPowell        
         //TODO: fix multiple js errors on refersh         
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
-        //TODO: Tooltip should not be visible when edge is overflowing
+        //TODO: Tooltip should not be visible when edge is overflowing (solved, except for vertical - only first rangeitem works)
         //TODO: add demo for date/time
         internal const int VerticalTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
