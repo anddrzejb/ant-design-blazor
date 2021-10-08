@@ -692,8 +692,8 @@ namespace AntDesign
             if (firstRender)
             {
                 DomEventListener.AddShared<JsonElement>("window", "beforeunload", Reloading);
-                DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
-                DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
+                //DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
+                //DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
             }
             base.OnAfterRender(firstRender);
         }
@@ -1433,6 +1433,11 @@ namespace AntDesign
 
         private async Task OnRangeItemClick(MouseEventArgs args)
         {
+            _mouseDownOnTrack = !Disabled && !Parent.Disabled;
+            if (!_mouseDownOnTrack)
+            {
+                return;
+            }
             if (!_isFocused)
             {
                 SetFocus(true);
@@ -1452,7 +1457,8 @@ namespace AntDesign
             }
 
             //evaluate clicked position in respect to each edge
-            _mouseDownOnTrack = !Disabled && !Parent.Disabled;
+            DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
+            DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
             (double sliderOffset, double sliderLength, double sliderWidth, double sliderHeight)
                 = await GetSliderDimensions(Parent._railRef);
             _trackedClientWidth = sliderWidth;
@@ -1479,6 +1485,13 @@ namespace AntDesign
         private void OnMouseDownEdge(MouseEventArgs args, RangeEdge edge)
         {
             _mouseDown = !Disabled && !Parent.Disabled;
+            if (!_mouseDown)
+            {
+                return;
+            }
+            DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
+            DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
+            _mouseDown = true;
             SetFocus(true);
             Parent.SetRangeItemFocus(this, true);
             _right = edge == RangeEdge.Right;
@@ -1557,7 +1570,7 @@ namespace AntDesign
             }
             _shouldRender = true;
 
-            bool raiseOnAfterChangeEvent = _mouseDown || _mouseDownOnTrack;
+            bool mouseWasClicked = _mouseDown || _mouseDownOnTrack;
             if (_mouseDown)
             {
                 _mouseDown = false;
@@ -1580,10 +1593,14 @@ namespace AntDesign
                     AttachedItem.GapDistance = GapDistance;
                 }
             }
+            if (mouseWasClicked)
+            {
+                DomEventListener.RemoveShared<JsonElement>("window", "mousemove", OnMouseMove);
+                DomEventListener.RemoveShared<JsonElement>("window", "mouseup", OnMouseUp);
 #pragma warning disable CS4014 // Does not return anything, fire & forget            
-            RaiseOnAfterChangeCallback(() => raiseOnAfterChangeEvent && _valueCache != _value);
+                RaiseOnAfterChangeCallback(() => _valueCache != _value);
 #pragma warning restore CS4014 // Does not return anything, fire & forget
-
+            }
             if (_toolTipRight != null)
             {
                 if (_tooltipRightVisible != TooltipVisible)

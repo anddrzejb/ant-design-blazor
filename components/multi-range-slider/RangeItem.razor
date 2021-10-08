@@ -73,14 +73,6 @@
             "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedRightHandleClass,
             _rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle, _rightHandleFill
         ))
-@*        @edge(new EdgeTemplate(new ForwardRef() { Current = _leftHandle}, Parent.Min, Parent.Max, Disabled, RangeEdge.Left, _leftValue, 
-            "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedLeftHandleClass,
-            _leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle, _leftHandleFill
-        ))
-        @edge(new EdgeTemplate(new ForwardRef() { Current = _rightHandle}, Parent.Min, Parent.Max, Disabled, RangeEdge.Right, _rightValue, 
-            "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedRightHandleClass,
-            _rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle, _rightHandleFill
-        ))*@
     }
 
 </div>
@@ -107,25 +99,8 @@
             ChildContent = childContent;
         }
 
-        //internal EdgeTemplate(ForwardRef reference, double min, double max, bool disabled, 
-        //    RangeEdge edge, double value, string cssClass, string style, RenderFragment childContent)
-        //{
-        //    Ref = reference;
-        //    Min = min;
-        //    Max = max;
-        //    Disabled = disabled;
-        //    Edge = edge;
-        //    Value = value;
-        //    CssClass = cssClass;
-        //    Style = style;
-        //    ChildContent = childContent;
-        //}
-
         internal ForwardRef Ref { get; set; }
         internal RangeItem RangeItem { get; set; }
-        //internal double Min { get; set; }
-        //internal double Max { get; set; }
-        //internal bool Disabled { get; set; }
         internal RangeEdge Edge { get; set; }
         internal double Value { get; set; }
         internal string CssClass { get; set; }
@@ -135,33 +110,6 @@
 
     internal RenderFragment<EdgeTemplate> edge => (data) => builder =>
     {
-        //builder.OpenElement(1, "div");
-        //builder.AddAttribute(2, "tablindex", 0);
-        //builder.AddAttribute(3, "class", data.CssClass);
-        //builder.AddAttribute(4, "role", "slider");
-        //builder.AddAttribute(5, "aria-disabled", data.Disabled.ToString());
-        //builder.AddAttribute(6, "aria-valuenow", data.Value);
-        //builder.AddAttribute(7, "aria-valuemin", data.Min);
-        //builder.AddAttribute(8, "aria-valuemax", data.Max);
-        //builder.AddAttribute(9, "style", data.Style);
-
-        //builder.AddAttribute(10, "onmousedown", RangeItem.CallbackFactory.Create<MouseEventArgs>(this, (args) => OnMouseDownEdge(args, data.Edge)));
-        //builder.AddEventStopPropagationAttribute(11, "onmousedown", true);
-
-        //builder.AddAttribute(13, "onkeydown", RangeItem.CallbackFactory.Create<KeyboardEventArgs>(this, async (args) => await OnKeyDown(args, data.Edge)));
-        //builder.AddEventPreventDefaultAttribute(14, "onkeydown", true);
-        //builder.AddEventStopPropagationAttribute(15, "onkeydown", true);
-
-        //builder.AddAttribute(16, "ondblclick", RangeItem.CallbackFactory.Create<MouseEventArgs>(this, args => OnDoubleClick(data.Edge)));
-
-        //builder.AddAttribute(20, "onkeyup", RangeItem.CallbackFactory.Create(this, OnKeyUp));
-        //builder.AddEventPreventDefaultAttribute(21, "onkeyup", true);
-        //builder.AddEventStopPropagationAttribute(22, "onkeyup", true);
-
-        //builder.AddContent(30, data.ChildContent);
-        //builder.AddElementReferenceCapture(99, r => data.Ref.Current = r);
-        //builder.CloseElement();
-
         builder.OpenElement(1, "div");
         builder.AddAttribute(2, "tablindex", 0);
         builder.AddAttribute(3, "class", data.CssClass);
