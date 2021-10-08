@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AntDesign.Core.Helpers;
@@ -1458,7 +1457,11 @@ namespace AntDesign
                 = await GetSliderDimensions(Parent._railRef);
             _trackedClientWidth = sliderWidth;
             sliderHeight = _trackedClientHeight;
+#if NET_6_0_OR_GRATER
             double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.PageY : args.PageX, sliderOffset, sliderLength);
+#else
+            double clickedValue = CalculateNewHandleValue(Parent.Vertical ? args.ClientY : args.ClientX, sliderOffset, sliderLength);
+#endif
             _distanceToLeftHandle = clickedValue - LeftValue;
             _distanceToRightHandle = RightValue - clickedValue;
             _valueCache = _value;
