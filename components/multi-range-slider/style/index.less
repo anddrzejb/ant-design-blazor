@@ -2,6 +2,7 @@
 @import '../../style/mixins/index';
 
 
+@multi-range-group-prefix-cls: ~'@{ant-prefix}-multi-range-group';
 @multi-range-slider-handle-lock-size: 20px;
 @multi-range-slider-margin: 10px 7px 10px;
 @multi-range-slider-prefix-cls: ~'@{ant-prefix}-multi-range-slider';
@@ -9,6 +10,16 @@
 @multi-range-slider-handle-margin-left: 3px;
 @multi-range-slider-handle-lock-margin-top: 0px;
 @multi-range-slider-handle-lock-margin-left: 0px;
+
+.@{multi-range-group-prefix-cls} {
+  .@{multi-range-slider-prefix-cls}-dot-line-dot {
+    position: inherit;
+    z-index: 2;
+    height: inherit;
+    width: inherit;
+  }
+}
+
 .@{multi-range-slider-prefix-cls} {
   .reset-component();
 
@@ -191,6 +202,7 @@
     display: inline-block;
     height: 20px;
     width: 1px;
+    opacity: 0.5;
   }
 
   &-disabled {

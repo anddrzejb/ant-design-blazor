@@ -24,8 +24,8 @@ namespace AntDesign
         private string _trackCssPosition = "left: 0%; width: 0%; right: auto;";
         private bool _isFocused;
         private string _focusClass = "";
-        private string _leftFocusZIndex = "z-index: 900;";
-        private string _rightFocusZIndex = "z-index: 900;";
+        private string _leftFocusZIndex = "z-index: 2;";
+        private string _rightFocusZIndex = "z-index: 2;";
         private bool _mouseDown;
         private bool _mouseDownOnTrack;
         private bool _right = true;
@@ -882,11 +882,11 @@ namespace AntDesign
                 _focusStyle = _customFocusStyle;
                 if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
                 {
-                    _leftFocusZIndex = "z-index: 1000;"; //just below default overlay zindex
+                    _leftFocusZIndex = "z-index: 3;"; //just below default overlay zindex
                 }
                 if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
                 {
-                    _rightFocusZIndex = "z-index: 1000;";
+                    _rightFocusZIndex = "z-index: 3;";
                 }
             }
             else
@@ -895,11 +895,11 @@ namespace AntDesign
                 _focusStyle = "";
                 if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Left))
                 {
-                    _leftFocusZIndex = "z-index: 900;";
+                    _leftFocusZIndex = "z-index: 2;";
                 }
                 if (!(HasAttachedEdge && AttachedHandleNo == RangeEdge.Right))
                 {
-                    _rightFocusZIndex = "z-index: 900;";
+                    _rightFocusZIndex = "z-index: 2;";
                 }
             }
             if (!isFocused)
@@ -1335,7 +1335,7 @@ namespace AntDesign
                 attachHandleClass = $" {PreFixCls}-handle-lock {PreFixCls}-handle-lock-open";
                 handleFill = _unlocked;
             }
-            focusIndex = "z-index: 1010;";
+            focusIndex = "z-index: 4;";
         }
 
         internal void ResetLockEdgeStyle(bool requestStateChange)
@@ -1345,8 +1345,8 @@ namespace AntDesign
             _attachedRightHandleClass = "";
             _leftHandleFill = null;
             _rightHandleFill = null;
-            _leftFocusZIndex = "z-index: 900;";
-            _rightFocusZIndex = "z-index: 900;";
+            _leftFocusZIndex = "z-index: 2;";
+            _rightFocusZIndex = "z-index: 2;";
             if (requestStateChange)
             {
                 StateHasChanged();

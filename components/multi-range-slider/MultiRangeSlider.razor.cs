@@ -6,6 +6,7 @@ using System.Linq;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using AntDesign.JsInterop;
 
 namespace AntDesign
 {
@@ -28,9 +29,11 @@ namespace AntDesign
         private bool _isInitialized;
         private bool _oversized;
         private bool _orientationHasChanged;
+        private List<RangeItem> _items = new();
+        List<string> _keys = new();
+        private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries;
         internal ElementReference _railRef;
         private ElementReference _scrollableAreaRef;
-        List<string> _keys = new();
 
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
@@ -38,6 +41,9 @@ namespace AntDesign
         internal double MinMaxDelta => Max - Min;
         internal bool Oversized { get => _oversized; set => _oversized = value; }
         internal double ItemAdjust { get; private set; }
+
+        [CascadingParameter(Name = "RangeGroup")]
+        public MultiRangeGroup Parent { get; set; }
 
         [Parameter]
         public Func<(RangeItem range, RangeEdge edge, double value), bool> OnEdgeMoving { get; set; }
@@ -156,7 +162,7 @@ namespace AntDesign
         /// Tick mark of Slider, type of key must be number, and must in closed interval [min, max], each mark can declare its own style
         /// </summary>
         [Parameter]
-        public RangeItemMark[] Marks { get; set; }
+        public RangeItemMark[] Marks { get => _marks; set => _marks = value; }
 
         /// <summary>
         /// The maximum value the range slider
@@ -449,6 +455,7 @@ namespace AntDesign
         protected override void OnInitialized()
         {
             base.OnInitialized();
+            Parent?.AddMultiRangeSliderItem(this);
             _trackSize = GetRangeFullSize();
             _isInitialized = true;
         }
@@ -519,7 +526,7 @@ namespace AntDesign
                 {
                     TooltipPlacement = Placement.Right;
                 }
-                else 
+                else
                 {
                     TooltipPlacement = Placement.Top;
                 }
@@ -597,8 +604,11 @@ namespace AntDesign
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private List<RangeItem> _items = new();
-        private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries;
+        protected override void Dispose(bool disposing)
+        {
+            Parent?.RemoveMultiRangeSliderItem(this);
+            base.Dispose(disposing);
+        }
 
         internal void AddRangeItem(RangeItem item)
         {
@@ -644,6 +654,9 @@ namespace AntDesign
                 _keys.Clear();
             }
         }
+
+        internal void SetMarksFromParent(RangeItemMark[] marks) => _marks = marks;
+
         internal double GetLeftBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandle)
         {
             if (AllowOverlapping)
@@ -915,6 +928,7 @@ namespace AntDesign
         private bool _hasTooltip = true;
         private Placement _tooltipPlacement;
         private bool _tooltipVisible;
+        private RangeItemMark[] _marks;
 
         internal void SetRangeItemFocus(RangeItem item, bool isFocused)
         {

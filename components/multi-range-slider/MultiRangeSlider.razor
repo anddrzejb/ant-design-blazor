@@ -8,11 +8,15 @@
         </div>
     
         <div class="ant-multi-range-slider-step">
-            @if (Marks != null)
+            @if (
+                    (Marks is not null && Parent is null)
+                ||
+                    (Parent is not null && Parent.IsFirst(this))
+            )
             {
                 @foreach (RangeItemMark mark in Marks)
                 {
-                    <span style="position: absolute;@($"{GetBasePosition()}: {SetMarkPosition(mark.Key)};")">
+                    <span style="position: absolute;@($"{GetBasePosition()}: {SetMarkPosition(mark.Key)};" + (Parent is not null ? $"height: {Parent._markHeight}px;" : ""))">
                         <span class="ant-multi-range-slider-dot-line-dot"></span>
                     </span>
                 }
@@ -48,7 +52,11 @@
             }
         </CascadingValue>
         <div class="ant-multi-range-slider-mark">
-            @if (Marks != null)
+            @if (
+                    (Marks is not null && Parent is null)
+                ||
+                    (Parent is not null && Parent.IsLast(this))
+            )
             {
                 @foreach (RangeItemMark mark in Marks)
                 {
