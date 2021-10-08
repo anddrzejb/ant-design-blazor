@@ -1,0 +1,62 @@
+﻿<div>
+    <MultiRangeSlider AllowOverlapping>
+        <RangeItem @ref="@_first" DefaultValue="(0, 40)"/>
+        <RangeItem @ref="@_second" DefaultValue="(35, 60)"/>
+        <RangeItem @ref="@_third" DefaultValue="(65, 85)"/>
+        <RangeItem @ref="@_fourth" DefaultValue="(85, 95)"/>
+    </MultiRangeSlider>    
+    <div>
+        Allow detaching: <Switch Size="small" @bind-Value="@_allowDetach" />
+        <Button OnClick="AttachFirstToSecond1" Disabled="@_disabledAll">First right & Second left</Button>
+        <Button OnClick="AttachFirstToSecond2" Disabled="@_disabledAll">First right & Second right</Button>
+        <ButtonGroup>
+            <Button OnClick="AttachSecond" Disabled="@(!_disabledSingle)">Attach second right</Button>
+            <Button OnClick="AttachThird" Disabled="@_disabledSingle">Attach third left</Button>
+        </ButtonGroup>
+        <Button OnClick="AttachThirdToFourth" Disabled="@_disabledAll">Attach third right & fourth left</Button>
+        <Button OnClick="Detach" Disabled="@_disabledAll">Detach</Button>
+    </div>
+
+</div>
+
+@code
+{
+    RangeItem _first;
+    RangeItem _second;
+    RangeItem _third;
+    RangeItem _fourth;
+    bool _allowDetach;
+    bool _disabledAll;
+    bool _disabledSingle = true;
+
+    void AttachFirstToSecond1() => _first.AttachEdges(RangeEdge.Right, _second, RangeEdge.Left, _allowDetach);
+
+    void AttachFirstToSecond2() => _first.AttachEdges(RangeEdge.Right, _second, RangeEdge.Right, _allowDetach);
+
+    void AttachSecond()
+    {                
+        if (_second.AttachSingle(RangeEdge.Right, _allowDetach))
+        {
+            _disabledAll = true;
+            _disabledSingle = false;
+        }
+    }
+
+    void AttachThird()
+    {
+        _disabledAll = false;
+        _disabledSingle = true;
+        _third.AttachSingle(RangeEdge.Left);
+    }
+
+    void AttachThirdToFourth() => _third.AttachOverlappingEdges(RangeEdge.Right, _allowDetach);
+
+    void Detach()
+    {
+        _first.DetachEdges();
+        _second.DetachEdges();
+        _third.DetachEdges();
+        _fourth.DetachEdges();
+    }
+
+}
