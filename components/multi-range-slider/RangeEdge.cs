@@ -2,7 +2,7 @@
 {
     public enum RangeEdge
     {
-        Left = 1,
-        Right = 2,
+        First = 1,
+        Last = 2,
     }
 }

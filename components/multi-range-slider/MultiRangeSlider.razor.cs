@@ -44,7 +44,7 @@ namespace AntDesign
         private Func<double, string> _tipFormatter = (d) => d.ToString(LocaleProvider.CurrentLocale.CurrentCulture);
         private List<RangeItem> _items = new();
         private List<string> _keys = new();
-        private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries;
+        private Dictionary<string, (RangeItem prevNeighbor, RangeItem nextNeighbor, RangeItem item)> _boundaries;
         internal ElementReference _railRef;
         private ElementReference _scrollableAreaRef;
         private string _trackSize = "";
@@ -170,25 +170,25 @@ namespace AntDesign
         /// Called before edge is attached. If returns 'false', attaching is stopped.
         /// </summary>
         [Parameter]
-        public Func<(RangeItem left, RangeItem right), (bool allowAttaching, bool detachExistingOnCancel)> OnEdgeAttaching { get; set; }
+        public Func<(RangeItem first, RangeItem last), (bool allowAttaching, bool detachExistingOnCancel)> OnEdgeAttaching { get; set; }
 
         /// <summary>
         /// Called after edge is attached.
         /// </summary>
         [Parameter]
-        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeAttached { get; set; }
+        public EventCallback<(RangeItem first, RangeItem last)> OnEdgeAttached { get; set; }
 
         /// <summary>
         /// Called before edge is detached. If returns 'false', detaching is stopped.
         /// </summary>
         [Parameter]
-        public Func<(RangeItem left, RangeItem right), bool> OnEdgeDetaching { get; set; }
+        public Func<(RangeItem first, RangeItem last), bool> OnEdgeDetaching { get; set; }
 
         /// <summary>
         /// Called after edge is detached.
         /// </summary>
         [Parameter]
-        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeDetached { get; set; }
+        public EventCallback<(RangeItem first, RangeItem last)> OnEdgeDetached { get; set; }
 
         /// <summary>
         /// Called before edge is moved. If returns `false`, moving is canceled.
@@ -713,7 +713,7 @@ namespace AntDesign
         internal void SetVerticalFromParent(bool vertical) => Vertical = vertical;
         internal void SetReverseFromParent(bool reverse) => Reverse = reverse;
 
-        internal double GetLeftBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandle)
+        internal double GetFirstEdgeBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandle)
         {
             if (AllowOverlapping)
             {
@@ -728,35 +728,35 @@ namespace AntDesign
                 return Min;
             }
 
-            if (_isAtfterFirstRender && _boundaries[id].leftNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries[id].prevNeighbor != default)
             {
                 if (fromHandle == attachedHandle)
                 {
                     if (_boundaries[id].item.HasAttachedEdgeWithGap)
                     {
-                        if (attachedHandle == RangeEdge.Left)
+                        if (attachedHandle == RangeEdge.First)
                         {
-                            return _boundaries[id].leftNeighbour.LeftValue + _boundaries[id].item.GapDistance;
+                            return _boundaries[id].prevNeighbor.FirstValue + _boundaries[id].item.GapDistance;
                         }
                     }
                     else
                     {
-                        if (attachedHandle == RangeEdge.Left) //do not allow to exceed neighbor's edge
+                        if (attachedHandle == RangeEdge.First) //do not allow to exceed neighbor's edge
                         {
-                            return _boundaries[id].leftNeighbour.LeftValue;
+                            return _boundaries[id].prevNeighbor.FirstValue;
                         }
                     }
                 }
                 else
                 {
                     //for single edge, all except the closes to the Min
-                    return _boundaries[id].leftNeighbour.RightValue + _boundaryAdjust;
+                    return _boundaries[id].prevNeighbor.LastValue + _boundaryAdjust;
                 }
             }
             return Min;
         }
 
-        internal double GetRightBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandleNo)
+        internal double GetLastEdgeBoundary(string id, RangeEdge fromHandle, RangeEdge attachedHandleNo)
         {
             if (AllowOverlapping)
             {
@@ -771,48 +771,48 @@ namespace AntDesign
                 return Max;
             }
 
-            if (_isAtfterFirstRender && _boundaries[id].rightNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries[id].nextNeighbor != default)
             {
                 if (fromHandle == attachedHandleNo)
                 {
                     if (_boundaries[id].item.HasAttachedEdgeWithGap)
                     {
-                        if (attachedHandleNo == RangeEdge.Left)
+                        if (attachedHandleNo == RangeEdge.First)
                         {
-                            return _boundaries[id].item.RightValue;
+                            return _boundaries[id].item.LastValue;
                         }
-                        if (attachedHandleNo == RangeEdge.Right)
+                        if (attachedHandleNo == RangeEdge.Last)
                         {
                             //in a gap situation, gap distance has to be accounted for
-                            return _boundaries[id].rightNeighbour.RightValue - _boundaries[id].item.GapDistance;
+                            return _boundaries[id].nextNeighbor.LastValue - _boundaries[id].item.GapDistance;
                         }
                     }
                     else
                     {
-                        if (attachedHandleNo == RangeEdge.Left)
+                        if (attachedHandleNo == RangeEdge.First)
                         {
-                            return _boundaries[id].rightNeighbour.LeftValue;
+                            return _boundaries[id].nextNeighbor.FirstValue;
                         }
                         else
                         {
                             //used only when range is dragged but 2 neighboring
                             //edges are attached & first range is dragged
-                            return _boundaries[id].rightNeighbour.RightValue;
+                            return _boundaries[id].nextNeighbor.LastValue;
                         }
                     }
                 }
                 else
                 {
                     //for single edge, all except the closes to the Max
-                    return _boundaries[id].rightNeighbour.LeftValue - _boundaryAdjust;
+                    return _boundaries[id].nextNeighbor.FirstValue - _boundaryAdjust;
 
                 }
             }
-            if (attachedHandleNo > 0) //because this is with attached, it's max is its own current Right
+            if (attachedHandleNo > 0) //because this is with attached, it's max is its own current Last
             {
                 if (!_boundaries[id].item.IsRangeDragged)
                 {
-                    return _boundaries[id].item.RightValue;
+                    return _boundaries[id].item.LastValue;
                 }
             }
             return Max;
@@ -827,29 +827,29 @@ namespace AntDesign
 
         private static double GetPulledEdgeValue(RangeItem item)
         {
-            if (item.AttachedHandleNo == RangeEdge.Left)
+            if (item.AttachedHandleNo == RangeEdge.First)
             {
-                return item.LeftValue;
+                return item.FirstValue;
             }
             else
             {
-                return item.RightValue;
+                return item.LastValue;
             }
         }
-        internal RangeItem GetRightNeighbour(string id)
+        internal RangeItem GetNextNeighbour(string id)
         {
-            if (_isAtfterFirstRender && _boundaries?[id].rightNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries?[id].nextNeighbor != default)
             {
-                return _boundaries[id].rightNeighbour;
+                return _boundaries[id].nextNeighbor;
             }
             return default;
         }
 
-        internal RangeItem GetLeftNeighbour(string id)
+        internal RangeItem GetPrevNeighbour(string id)
         {
-            if (_isAtfterFirstRender && _boundaries?[id].leftNeighbour != default)
+            if (_isAtfterFirstRender && _boundaries?[id].prevNeighbor != default)
             {
-                return _boundaries[id].leftNeighbour;
+                return _boundaries[id].prevNeighbor;
             }
             return default;
         }
@@ -872,57 +872,57 @@ namespace AntDesign
                 });
 
             _boundaries = new();
-            RangeItem leftNeighbour = default;
+            RangeItem prevNeighbor = default;
             string previousId = "";
-            (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item) previousItem;
+            (RangeItem prevNeighbor, RangeItem nextNeighbor, RangeItem item) previousItem;
             foreach (var item in _items)
             {
                 if (previousId != string.Empty)
                 {
                     previousItem = _boundaries[previousId];
-                    previousItem.rightNeighbour = item;
+                    previousItem.nextNeighbor = item;
                     _boundaries[previousId] = previousItem;
 
                 }
                 previousId = item.Id;
 
-                _boundaries.Add(item.Id, (leftNeighbour, default, item));
-                leftNeighbour = item;
+                _boundaries.Add(item.Id, (prevNeighbor, default, item));
+                prevNeighbor = item;
 
             }
 
             previousItem = _boundaries[previousId];
-            previousItem.rightNeighbour = default;
+            previousItem.nextNeighbor = default;
             _boundaries[previousId] = previousItem;
         }
 
-        internal void GetAttachedInOrder(out RangeItem left, out RangeItem right)
+        internal void GetAttachedInOrder(out RangeItem first, out RangeItem last)
         {
             if (ItemRequestingAttach.AttachedHandleNo != ItemRespondingToAttach.AttachedHandleNo //same edges - no way to overlap
                 && AllowOverlapping)
             {
-                if (ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
+                if (ItemRequestingAttach.AttachedHandleNo == RangeEdge.First)
                 {
-                    right = ItemRequestingAttach;
-                    left = ItemRespondingToAttach;
+                    last = ItemRequestingAttach;
+                    first = ItemRespondingToAttach;
                 }
                 else
                 {
-                    right = ItemRespondingToAttach;
-                    left = ItemRequestingAttach;
+                    last = ItemRespondingToAttach;
+                    first = ItemRequestingAttach;
                 }
             }
             else
             {
-                if (ItemRequestingAttach.AttachedHandleNo == RangeEdge.Left)
+                if (ItemRequestingAttach.AttachedHandleNo == RangeEdge.First)
                 {
-                    left = ItemRequestingAttach;
-                    right = ItemRespondingToAttach;
+                    first = ItemRequestingAttach;
+                    last = ItemRespondingToAttach;
                 }
                 else
                 {
-                    left = ItemRespondingToAttach;
-                    right = ItemRequestingAttach;
+                    first = ItemRespondingToAttach;
+                    last = ItemRequestingAttach;
                 }
             }
         }
@@ -1058,21 +1058,21 @@ namespace AntDesign
         /// Current solution: make track smaller by a <see cref="VerticalTrackAdjust">number of pixels</see>.
         /// As a result, a relative calculation has to be performed to evaluate track size. 
         /// </summary>
-        /// <param name="leftHandPercentage">The percentage calculated for the left edge as it would be 
+        /// <param name="firstHandlePercentage">The percentage calculated for the first edge as it would be 
         /// used without compensating for visual issue.
         /// </param>
-        /// <param name="rightHandPercentage">The percentage calculated for the right edge it would be 
+        /// <param name="secondHandlePercentage">The percentage calculated for the last edge it would be 
         /// used without compensating for visual issue.
         /// </param>/// 
         /// <returns>css calc formula</returns>
         /// <see cref="GetVerticalCoordinate"/>
-        internal static string GetVerticalTrackSize(double leftHandPercentage, double rightHandPercentage)
+        internal static string GetVerticalTrackSize(double firstHandlePercentage, double secondHandlePercentage)
         {
-            var skewLeft = GetVerticalSkew(leftHandPercentage);
-            var skewRight = GetVerticalSkew(rightHandPercentage);
+            var skewFirst = GetVerticalSkew(firstHandlePercentage);
+            var skewLast = GetVerticalSkew(secondHandlePercentage);
 
-            return $"calc(({Formatter.ToPercentWithoutBlank(rightHandPercentage)} - ({skewRight} * {VerticalTrackAdjust}px)) " +
-                   $"- ({Formatter.ToPercentWithoutBlank(leftHandPercentage)} - ({skewLeft} * {VerticalTrackAdjust}px)))";
+            return $"calc(({Formatter.ToPercentWithoutBlank(secondHandlePercentage)} - ({skewLast} * {VerticalTrackAdjust}px)) " +
+                   $"- ({Formatter.ToPercentWithoutBlank(firstHandlePercentage)} - ({skewFirst} * {VerticalTrackAdjust}px)))";
         }
 
         private string GetBasePosition() => Vertical ? "bottom" : "left";

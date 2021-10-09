@@ -74,7 +74,7 @@ namespace AntDesign
                 var lastTrackDom = await JsInvokeAsync<HtmlElement>(JSInteropConstants.GetDomInfo, _items.Last()._railRef);
                 if (Vertical)
                 {
-                    _markSize = (lastTrackDom.AbsoluteLeft + lastTrackDom.ClientWidth) - firstTrackDom.AbsoluteLeft; 
+                    _markSize = (lastTrackDom.AbsoluteLeft + lastTrackDom.ClientWidth) - firstTrackDom.AbsoluteLeft;
                 }
                 else
                 {

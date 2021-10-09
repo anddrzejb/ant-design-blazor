@@ -47,13 +47,13 @@
     bool _disabledAll;
     bool _disabledSingle = true;
 
-    void AttachFirstToSecond1() => _first.AttachEdges(RangeEdge.Right, _second, RangeEdge.Left, _allowDetach);
+    void AttachFirstToSecond1() => _first.AttachEdges(RangeEdge.Last, _second, RangeEdge.First, _allowDetach);
 
-    void AttachFirstToSecond2() => _first.AttachEdges(RangeEdge.Right, _second, RangeEdge.Right, _allowDetach);
+    void AttachFirstToSecond2() => _first.AttachEdges(RangeEdge.Last, _second, RangeEdge.Last, _allowDetach);
 
     void AttachSecond()
     {                
-        if (_second.AttachSingle(RangeEdge.Right, _allowDetach))
+        if (_second.AttachSingle(RangeEdge.Last, _allowDetach))
         {
             _disabledAll = true;
             _disabledSingle = false;
@@ -64,10 +64,10 @@
     {
         _disabledAll = false;
         _disabledSingle = true;
-        _third.AttachSingle(RangeEdge.Left);
+        _third.AttachSingle(RangeEdge.First);
     }
 
-    void AttachThirdToFourth() => _third.AttachOverlappingEdges(RangeEdge.Right, _allowDetach);
+    void AttachThirdToFourth() => _third.AttachOverlappingEdges(RangeEdge.Last, _allowDetach);
 
     void Detach()
     {

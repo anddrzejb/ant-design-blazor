@@ -25,38 +25,38 @@
     {
         if (Parent.Oversized)
         {
-            <Tooltip Title="@Parent.TipFormatter(_leftValue)" Style="display: inline;" Visible="_tooltipLeftVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLeft" PopupContainerSelector=@("#" + Id)>
+            <Tooltip Title="@Parent.TipFormatter(_firstValue)" Style="display: inline;" Visible="_tooltipFirstVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipFirst" PopupContainerSelector=@("#" + Id)>
                 <Unbound>
-                    @edge(new EdgeTemplate(this, context, RangeEdge.Left, _leftValue, 
-                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedLeftHandleClass,
-                        _leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle, _leftHandleFill
+                    @edge(new EdgeTemplate(this, context, RangeEdge.First, _firstValue, 
+                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedFirstHandleClass,
+                        _firstHandleCssPosition+_firstFocusZIndex+_customEdgeBorderStyle, _firstHandleFill
                     ))
                 </Unbound>
             </Tooltip>
-            <Tooltip Title="@Parent.TipFormatter(_rightValue)" Style="display: inline;" Visible="_tooltipRightVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipRight" PopupContainerSelector=@("#" + Id)>
+            <Tooltip Title="@Parent.TipFormatter(_lastValue)" Style="display: inline;" Visible="_tooltipLastVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLast" PopupContainerSelector=@("#" + Id)>
                 <Unbound>
-                    @edge(new EdgeTemplate(this, context, RangeEdge.Right, _rightValue, 
-                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedRightHandleClass, 
-                        _rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle, _rightHandleFill
+                    @edge(new EdgeTemplate(this, context, RangeEdge.Last, _lastValue, 
+                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedLastHandleClass, 
+                        _lastHandleCssPosition+_lastFocusZIndex+_customEdgeBorderStyle, _lastHandleFill
                     ))
                 </Unbound>
             </Tooltip>          
         }
         else
         {
-            <Tooltip Title="@Parent.TipFormatter(_leftValue)" Style="display: inline;" Visible="_tooltipLeftVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLeft">
+            <Tooltip Title="@Parent.TipFormatter(_firstValue)" Style="display: inline;" Visible="_tooltipFirstVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipFirst">
                 <Unbound>
-                    @edge(new EdgeTemplate(this, context, RangeEdge.Left, _leftValue, 
-                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedLeftHandleClass,
-                        _leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle, _leftHandleFill
+                    @edge(new EdgeTemplate(this, context, RangeEdge.First, _firstValue, 
+                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedFirstHandleClass,
+                        _firstHandleCssPosition+_firstFocusZIndex+_customEdgeBorderStyle, _firstHandleFill
                     ))
                 </Unbound>
             </Tooltip>
-            <Tooltip Title="@Parent.TipFormatter(_rightValue)" Style="display: inline;" Visible="_tooltipRightVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipRight">
+            <Tooltip Title="@Parent.TipFormatter(_lastValue)" Style="display: inline;" Visible="_tooltipLastVisible" ArrowPointAtCenter="true" OverlayClassName="ant-multi-range-slider-tooltip" Placement="@TooltipPlacement" @ref="_toolTipLast">
                 <Unbound>
-                    @edge(new EdgeTemplate(this, context, RangeEdge.Right, _rightValue, 
-                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedRightHandleClass, 
-                        _rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle, _rightHandleFill
+                    @edge(new EdgeTemplate(this, context, RangeEdge.Last, _lastValue, 
+                        "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedLastHandleClass, 
+                        _lastHandleCssPosition+_lastFocusZIndex+_customEdgeBorderStyle, _lastHandleFill
                     ))
                 </Unbound>
             </Tooltip>            
@@ -65,13 +65,13 @@
     }
     else
     {
-        @edge(new EdgeTemplate(this, new ForwardRef() { Current = _leftHandle}, RangeEdge.Left, _leftValue, 
-            "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedLeftHandleClass,
-            _leftHandleCssPosition+_leftFocusZIndex+_customEdgeBorderStyle, _leftHandleFill
+        @edge(new EdgeTemplate(this, new ForwardRef() { Current = _firstHandle}, RangeEdge.First, _firstValue, 
+            "ant-multi-range-slider-handle ant-multi-range-slider-handle-1"+_attachedFirstHandleClass,
+            _firstHandleCssPosition+_firstFocusZIndex+_customEdgeBorderStyle, _firstHandleFill
         ))
-        @edge(new EdgeTemplate(this, new ForwardRef() { Current = _rightHandle}, RangeEdge.Right, _rightValue, 
-            "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedRightHandleClass,
-            _rightHandleCssPosition+_rightFocusZIndex+_customEdgeBorderStyle, _rightHandleFill
+        @edge(new EdgeTemplate(this, new ForwardRef() { Current = _lastHandle}, RangeEdge.Last, _lastValue, 
+            "ant-multi-range-slider-handle ant-multi-range-slider-handle-2"+_attachedLastHandleClass,
+            _lastHandleCssPosition+_lastFocusZIndex+_customEdgeBorderStyle, _lastHandleFill
         ))
     }
 
@@ -82,8 +82,8 @@
     static RenderFragment _unlocked = @<Icon Type="unlock" Theme="outline"/>
     ;
 
-    RenderFragment _rightHandleFill;
-    RenderFragment _leftHandleFill;
+    RenderFragment _lastHandleFill;
+    RenderFragment _firstHandleFill;
 
     internal class EdgeTemplate
     {

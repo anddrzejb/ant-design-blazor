@@ -100,7 +100,7 @@
         else
         {
             double first, second;
-            if (data.left.GetAttachedEdge() == RangeEdge.Left)
+            if (data.left.GetAttachedEdge() == RangeEdge.First)
             {
                 first = data.left.Value.Item1;
             }
@@ -108,7 +108,7 @@
             {
                 first = data.left.Value.Item2;
             }
-            if (data.left.GetAttachedEdge() == RangeEdge.Left)
+            if (data.left.GetAttachedEdge() == RangeEdge.First)
             {
                 second = data.right.Value.Item1;
             }
