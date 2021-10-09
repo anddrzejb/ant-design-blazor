@@ -80,8 +80,7 @@ namespace AntDesign
                 {
                     _markSize = (lastTrackDom.AbsoluteTop + lastTrackDom.ClientHeight) - firstTrackDom.AbsoluteTop;
                 }
-                //TODO: check if needed
-                await InvokeAsync(StateHasChanged);
+                StateHasChanged();
 
             }
             await base.OnAfterRenderAsync(firstRender);
