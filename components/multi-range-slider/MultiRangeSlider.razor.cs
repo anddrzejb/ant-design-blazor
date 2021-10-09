@@ -18,7 +18,6 @@ namespace AntDesign
         //TODO: fix multiple js errors on refersh         
         //TODO: MAYBE: show 3rd/4th tooltip for attached edges when range is dragged
         //TODO: Tooltip should not be visible when edge is overflowing (solved, except for vertical - only first rangeitem works)
-        //TODO: add demo for date/time
         internal const int VerticalTrackAdjust = 14;
         private const string PreFixCls = "ant-multi-range-slider";
         private bool _isAtfterFirstRender = false;
@@ -30,6 +29,7 @@ namespace AntDesign
         private bool _oversized;
         private bool _orientationHasChanged;
         private bool _expandStepHasChanged;
+        private bool _reverseHasChanged;
         private double _visibleMin;
         private double _visibleMax;
         protected IEnumerable<(double, double)> _value;
@@ -228,11 +228,7 @@ namespace AntDesign
                 if (_reverse != value)
                 {
                     _reverse = value;
-                    //TODO: Optimize - move to either each RangeItem or OnParametersSet
-                    if (_items.Any())
-                    {
-                        _items.ForEach(x => x.SetPositions());
-                    }
+                    _reverseHasChanged = true;
                 }
             }
         }
@@ -586,20 +582,28 @@ namespace AntDesign
                 }
                 _orientationHasChanged = false;
             }
-            if (_isInitialized && _hasTooltipChanged && _items.Count > 0)
+            if (_isInitialized && _items.Count > 0)
             {
-                delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetHasTooltipFromParent)));
-                _hasTooltipChanged = false;
-            }
-            if (_isInitialized && _tooltipPlacementChanged && _items.Count > 0)
-            {
-                delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetTooltipPacementFromParent)));
-                _tooltipPlacementChanged = false;
-            }
-            if (_isInitialized && _tooltipVisibleChanged && _items.Count > 0)
-            {
-                delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetTooltipVisibleFromParent)));
-                _tooltipVisibleChanged = false;
+                if (_hasTooltipChanged)
+                {
+                    delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetHasTooltipFromParent)));
+                    _hasTooltipChanged = false;
+                }
+                if (_tooltipPlacementChanged)
+                {
+                    delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetTooltipPacementFromParent)));
+                    _tooltipPlacementChanged = false;
+                }
+                if (_tooltipVisibleChanged)
+                {
+                    delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetTooltipVisibleFromParent)));
+                    _tooltipVisibleChanged = false;
+                }
+                if (_reverseHasChanged)
+                {
+                    delegatesToExecute.Add(GetRangeItemMethod(nameof(RangeItem.SetPositions)));
+                    _reverseHasChanged = false;
+                }
             }
             if (delegatesToExecute.Count > 0)
             {
@@ -859,8 +863,7 @@ namespace AntDesign
             if (!_isAtfterFirstRender || _items.Count == 0)
             {
                 return;
-            }
-            //TODO: allow adding IComparer or use default
+            }            
             _items.Sort((s1, s2) =>
                 {
                     var firstItemCompare = s1.Value.Item1.CompareTo(s2.Value.Item1);
