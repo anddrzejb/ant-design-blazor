@@ -6,15 +6,33 @@
         <RangeItem @ref="@_fourth" DefaultValue="(85, 95)"/>
     </MultiRangeSlider>    
     <div>
-        Allow detaching: <Switch Size="small" @bind-Value="@_allowDetach" />
-        <Button OnClick="AttachFirstToSecond1" Disabled="@_disabledAll">First right & Second left</Button>
-        <Button OnClick="AttachFirstToSecond2" Disabled="@_disabledAll">First right & Second right</Button>
-        <ButtonGroup>
-            <Button OnClick="AttachSecond" Disabled="@(!_disabledSingle)">Attach second right</Button>
-            <Button OnClick="AttachThird" Disabled="@_disabledSingle">Attach third left</Button>
-        </ButtonGroup>
-        <Button OnClick="AttachThirdToFourth" Disabled="@_disabledAll">Attach third right & fourth left</Button>
-        <Button OnClick="Detach" Disabled="@_disabledAll">Detach</Button>
+        <Space Direction="@DirectionVHType.Vertical" Style="width: 100%">
+	        <SpaceItem>
+		        <Space Size=@(("8", "16")) Wrap>
+			        <SpaceItem>
+				        Allow detaching: <Switch Size="small" @bind-Value="@_allowDetach" />
+			        </SpaceItem>
+			        <SpaceItem>
+				        <Button OnClick="AttachFirstToSecond1" Disabled="@_disabledAll">First right & Second left</Button>
+			        </SpaceItem>
+			        <SpaceItem>
+				        <Button OnClick="AttachFirstToSecond2" Disabled="@_disabledAll">First right & Second right</Button>
+			        </SpaceItem>
+			        <SpaceItem>
+                        <ButtonGroup>
+                            <Button OnClick="AttachSecond" Disabled="@(!_disabledSingle)">Attach second right</Button>
+                            <Button OnClick="AttachThird" Disabled="@_disabledSingle">Attach third left</Button>
+                        </ButtonGroup>
+			        </SpaceItem>
+			        <SpaceItem>
+				        <Button OnClick="AttachThirdToFourth" Disabled="@_disabledAll">Attach third right & fourth left</Button>
+			        </SpaceItem>
+			        <SpaceItem>
+				        <Button OnClick="Detach" Disabled="@_disabledAll">Detach</Button>
+			        </SpaceItem>
+		        </Space>
+	        </SpaceItem>
+        </Space>
     </div>
 
 </div>
@@ -25,7 +43,7 @@
     RangeItem _second;
     RangeItem _third;
     RangeItem _fourth;
-    bool _allowDetach;
+    bool _allowDetach = true;
     bool _disabledAll;
     bool _disabledSingle = true;
 

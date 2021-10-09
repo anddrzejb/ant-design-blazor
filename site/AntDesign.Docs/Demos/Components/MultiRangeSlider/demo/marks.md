@@ -6,8 +6,8 @@ title:
 ---
 
 ## zh-CN
-基本滑动条。当 `range` 为 `true` 时，渲染为双滑块。当 `disabled` 为 `true` 时，滑块处于不可用状态。
+Use `Marks` property to create axis values. Use `Step` to define what is the size of the single move (`Step="4"` means that an edge will move by 4 units). To move only from mark to mark, use `Step="null"`.
 
 
 ## en-US
-Basic slider. When `range` is `true`, display as dual thumb mode. When `disable` is `true`, the slider will not be interactable.
+Use `Marks` property to create axis values. Use `Step` to define what is the size of the single move (`Step="4"` means that an edge will move by 4 units). To move only from mark to mark, use `Step="null"`.

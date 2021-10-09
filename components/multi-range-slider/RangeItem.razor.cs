@@ -40,48 +40,44 @@ namespace AntDesign
         private string _focusStyle = "";
         private string _customEdgeBorderStyle = "";
         private bool _isDataSet;
+        private double _leftValue = double.MinValue;
+        private double _rightValue = double.MaxValue;
+        private bool _tooltipVisible;
+        private bool _tooltipVisibleSet;
+        private bool _tooltipRightVisible;
+        private bool _tooltipLeftVisible;
+        private bool _tooltipPlacementSet;
+        private OneOf<Color, string> _fontColor;
+        private string _fontColorAsString = "";
+        private string _colorAsString = "";
+        private OneOf<Color, string> _color;
+        OneOf<Color, string> _focusColor;
+        string _focusColorAsString = "";
+        OneOf<Color, string> _focusBorderColor;
+        private string _focusBorderColorAsString = "";
+        private (double, double) _value;
+        private MultiRangeSlider _parent;
+        private bool _hasAttachedEdgeWithGap;
+        private bool _hasAttachedEdge;
+        private Placement _tooltipPlacement;
+        private double _trackedClientX;
+        private double _trackedClientY;
+        private double _trackedClientWidth;
+        private double _trackedClientHeight;
+        private bool _shouldRender = true;
+        private bool _hasToolTip = true;
+        private bool _hasToolTipSet;
 
-        protected static readonly EventCallbackFactory CallbackFactory = new EventCallbackFactory();
         /// <summary>
-        /// Used to evaluate if OnAfterChange needs to be called
+        /// The maximum value the slider can slide to
         /// </summary>
-        private (double, double) _valueCache;
+        internal double Max => Parent.Max;
 
         /// <summary>
-        /// Used to figure out how much to move left and right when range is moved
+        /// The minimum value the slider can slide to
         /// </summary>
-        double _distanceToLeftHandle;
-        double _distanceToRightHandle;
-        internal bool IsRangeDragged { get; set; }
-        internal bool HasAttachedEdge
-        {
-            get => _hasAttachedEdge;
-            set
-            {
-                _hasAttachedEdge = value;
-                Parent.HasAttachedEdges = value;
-            }
-        }
 
-        internal bool HasAttachedEdgeWithGap
-        {
-            get => _hasAttachedEdgeWithGap;
-            set
-            {
-                _hasAttachedEdgeWithGap = value;
-                HasAttachedEdge = value;
-
-            }
-        }
-        internal RangeEdge AttachedHandleNo { get; set; }
-        internal RangeEdge HandleNoRequestingAttaching { get; set; }
-        private string _attachedLeftHandleClass = "";
-        private string _attachedRightHandleClass = "";
-        internal RangeItem AttachedItem { get; set; }
-        internal Action ChangeAttachedItem { get; set; }
-        internal double GapDistance { get; private set; }
-        internal bool Master { get; set; }
-        internal bool Slave { get; set; }
+        internal double Min => Parent.Min;
 
         private string RightHandleStyleFormat
         {
@@ -170,6 +166,49 @@ namespace AntDesign
             }
         }
 
+
+        protected static readonly EventCallbackFactory CallbackFactory = new EventCallbackFactory();
+        /// <summary>
+        /// Used to evaluate if OnAfterChange needs to be called
+        /// </summary>
+        private (double, double) _valueCache;
+
+        /// <summary>
+        /// Used to figure out how much to move left and right when range is moved
+        /// </summary>
+        double _distanceToLeftHandle;
+        double _distanceToRightHandle;
+        internal bool IsRangeDragged { get; set; }
+        internal bool HasAttachedEdge
+        {
+            get => _hasAttachedEdge;
+            set
+            {
+                _hasAttachedEdge = value;
+                Parent.HasAttachedEdges = value;
+            }
+        }
+
+        internal bool HasAttachedEdgeWithGap
+        {
+            get => _hasAttachedEdgeWithGap;
+            set
+            {
+                _hasAttachedEdgeWithGap = value;
+                HasAttachedEdge = value;
+
+            }
+        }
+        internal RangeEdge AttachedHandleNo { get; set; }
+        internal RangeEdge HandleNoRequestingAttaching { get; set; }
+        private string _attachedLeftHandleClass = "";
+        private string _attachedRightHandleClass = "";
+        internal RangeItem AttachedItem { get; set; }
+        internal Action ChangeAttachedItem { get; set; }
+        internal double GapDistance { get; private set; }
+        internal bool Master { get; set; }
+        internal bool Slave { get; set; }
+
         [Inject]
         private IDomEventListener DomEventListener { get; set; }
 
@@ -177,24 +216,108 @@ namespace AntDesign
         [CascadingParameter(Name = "Range")]
         public MultiRangeSlider Parent { get => _parent; set => _parent = value; }
 
+        /// <summary>
+        /// Color of the range item.
+        /// </summary>
+        [Parameter]
+        public OneOf<Color, string> Color
+        {
+            get => _color;
+            set
+            {
+                if (!_color.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _colorAsString = GetColorStyle(value, "background-color");
+                    _color = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Data object implementing `AntDesign.IRangeItemData` that will be used to render the ranges.
+        /// </summary>
         [Parameter]
         public IRangeItemData Data { get; set; }
 
         /// <summary>
-        /// The default value of slider. When <see cref="Range"/> is false, use number, otherwise, use [number, number]
+        /// The default value of slider. 
         /// </summary>
         [Parameter]
         public (double, double) DefaultValue { get; set; }
 
-        //TODO: check with mixing of Disabled in Range and in parent
+        /// <summary>
+        /// Text visible on the range.
+        /// </summary>
+        [Parameter]
+        public string Description { get; set; }
+
         /// <summary>
         /// If true, the slider will not be intractable
         /// </summary>
         [Parameter]
         public bool Disabled { get; set; }
 
-        private bool _hasToolTip = true;
-        private bool _hasToolTipSet;
+        //TODO: remove when two-tone color algorithm is going to be applied
+        /// <summary>
+        /// Color of the range item's border when focused.
+        /// </summary>
+        [Parameter]
+        public OneOf<Color, string> FocusBorderColor
+        {
+            get => _focusBorderColor;
+            set
+            {
+                if (!_focusBorderColor.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _focusBorderColorAsString = GetColorStyle(value, "border-color");
+                    _focusBorderColor = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Color of the range item when focused.
+        /// </summary>
+        [Parameter]
+        public OneOf<Color, string> FocusColor
+        {
+            get => _focusColor;
+            set
+            {
+                if (!_focusColor.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _focusColorAsString = GetColorStyle(value, "background-color");
+                    _focusColor = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Color of the text visible on the range.
+        /// </summary>
+        [Parameter]
+        public OneOf<Color, string> FontColor
+        {
+            get => _fontColor;
+            set
+            {
+                if (!_fontColor.Equals(value))
+                {
+                    _customStyleChange = true;
+                    _fontColorAsString = GetColorStyle(value, "color");
+                    _fontColor = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set the range's icon 
+        /// </summary>
+        [Parameter]
+        public string Icon { get; set; }
 
         [Parameter]
         public bool HasTooltip
@@ -208,17 +331,73 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// The maximum value the slider can slide to
+        /// Fire when changes are done (onmouseup and onkeyup).
         /// </summary>
-        public double Max => Parent.Max;
+        [Parameter]
+        public EventCallback<(double, double)> OnAfterChange { get; set; }
 
         /// <summary>
-        /// The minimum value the slider can slide to
+        /// Called when the user changes one of the values.
         /// </summary>
+        [Parameter]
+        public EventCallback<(double, double)> OnChange { get; set; }
 
-        public double Min => Parent.Min;
+        /// <summary>
+        /// Set `Tooltip` display position.
+        /// </summary>
+        [Parameter]
+        public Placement TooltipPlacement
+        {
+            get => _tooltipPlacement;
+            set
+            {
+                _tooltipPlacementSet = true;
+                _tooltipPlacement = value;
+            }
+        }
 
-        private double _leftValue = double.MinValue;
+        /// <summary>
+        /// If true, Tooltip will show always, or it will not show anyway, even if dragging or hovering.
+        /// </summary>
+        [Parameter]
+        public bool TooltipVisible
+        {
+            get { return _tooltipVisible; }
+            set
+            {
+                _tooltipVisibleSet = true;
+                if (_tooltipVisible != value)
+                {
+                    _tooltipVisible = value;
+                    //ensure parameter loading is not happening because values are changing during mouse moving
+                    //otherwise the tooltip will be vanishing when mouse moves out of the edge
+                    if (!_mouseDown)
+                    {
+                        _tooltipRightVisible = _tooltipVisible;
+                        _tooltipLeftVisible = _tooltipVisible;
+                    }
+                }
+            }
+        }
+        #endregion Parameters
+
+        private string GetColorStyle(OneOf<Color, string> color, string colorProperty)
+        {
+            return color.Match<string>(
+                colorValue => $"{colorProperty}: {ColorHelper.GetColor(colorValue)};",
+                stringValue => $"{colorProperty}: {stringValue};"
+                );
+        }
+
+        protected override void OnInitialized()
+        {
+            base.OnInitialized();
+            Parent.AddRangeItem(this);
+            SetPositions();
+            SetHasTooltipFromParent();
+            SetTooltipPacementFromParent();
+            SetTooltipVisibleFromParent();
+        }
 
         internal double LeftValue
         {
@@ -264,8 +443,6 @@ namespace AntDesign
             }
             SetPositions();
         }
-
-        private double _rightValue = double.MaxValue;
 
         private void RaiseOnChangeCallback()
         {
@@ -346,158 +523,6 @@ namespace AntDesign
             return Parent.GetNearestStep(value);
         }
 
-        /// <summary>
-        /// Fire when changes are done (onmouseup and onkeyup).
-        /// </summary>
-        [Parameter]
-        public EventCallback<(double, double)> OnAfterChange { get; set; }
-
-        /// <summary>
-        /// Callback function that is fired when the user changes one of the values.
-        /// </summary>
-        [Parameter]
-        public EventCallback<(double, double)> OnChange { get; set; }
-
-        bool _tooltipPlacementSet;
-        [Parameter]
-        public Placement TooltipPlacement
-        {
-            get => _tooltipPlacement;
-            set
-            {
-                _tooltipPlacementSet = true;
-                _tooltipPlacement = value;
-            }
-        }
-
-        /// <summary>
-        /// If true, Tooltip will show always, or it will not show anyway, even if dragging or hovering.
-        /// </summary>
-        private bool _tooltipVisible;
-        private bool _tooltipVisibleSet;
-
-        private bool _tooltipRightVisible;
-        private bool _tooltipLeftVisible;
-
-        [Parameter]
-        public bool TooltipVisible
-        {
-            get { return _tooltipVisible; }
-            set
-            {
-                _tooltipVisibleSet = true;
-                if (_tooltipVisible != value)
-                {
-                    _tooltipVisible = value;
-                    //ensure parameter loading is not happening because values are changing during mouse moving
-                    //otherwise the tooltip will be vanishing when mouse moves out of the edge
-                    if (!_mouseDown)
-                    {
-                        _tooltipRightVisible = _tooltipVisible;
-                        _tooltipLeftVisible = _tooltipVisible;
-                    }
-                }
-            }
-        }
-
-        [Parameter]
-        public string Description { get; set; }
-
-        /// <summary>
-        /// Set the range's icon 
-        /// </summary>
-        [Parameter]
-        public string Icon { get; set; }
-
-        private OneOf<Color, string> _fontColor;
-        private string _fontColorAsString = "";
-        [Parameter]
-        public OneOf<Color, string> FontColor
-        {
-            get => _fontColor;
-            set
-            {
-                if (!_fontColor.Equals(value))
-                {
-                    _customStyleChange = true;
-                    _fontColorAsString = GetColorStyle(value, "color");
-                    _fontColor = value;
-                }
-            }
-        }
-
-        private string _colorAsString = "";
-        private OneOf<Color, string> _color;
-        [Parameter]
-        public OneOf<Color, string> Color
-        {
-            get => _color;
-            set
-            {
-                if (!_color.Equals(value))
-                {
-                    _customStyleChange = true;
-                    _colorAsString = GetColorStyle(value, "background-color");
-                    _color = value;
-                }
-            }
-        }
-
-        OneOf<Color, string> _focusColor;
-        string _focusColorAsString = "";
-
-        [Parameter]
-        public OneOf<Color, string> FocusColor
-        {
-            get => _focusColor;
-            set
-            {
-                if (!_focusColor.Equals(value))
-                {
-                    _customStyleChange = true;
-                    _focusColorAsString = GetColorStyle(value, "background-color");
-                    _focusColor = value;
-                }
-            }
-        }
-
-        //TODO: remove when two-tone color alghoritm is going to be applied
-        OneOf<Color, string> _focusBorderColor;
-        private string _focusBorderColorAsString = "";
-        [Parameter]
-        public OneOf<Color, string> FocusBorderColor
-        {
-            get => _focusBorderColor;
-            set
-            {
-                if (!_focusBorderColor.Equals(value))
-                {
-                    _customStyleChange = true;
-                    _focusBorderColorAsString = GetColorStyle(value, "border-color");
-                    _focusBorderColor = value;
-                }
-            }
-        }
-        #endregion Parameters
-
-        private string GetColorStyle(OneOf<Color, string> color, string colorProperty)
-        {
-            return color.Match<string>(
-                colorValue => $"{colorProperty}: {ColorHelper.GetColor(colorValue)};",
-                stringValue => $"{colorProperty}: {stringValue};"
-                );
-        }
-
-        protected override void OnInitialized()
-        {
-            base.OnInitialized();
-            Parent.AddRangeItem(this);
-            SetPositions();
-            SetHasTooltipFromParent();
-            SetTooltipPacementFromParent();
-            SetTooltipVisibleFromParent();
-        }
-
         internal void SetHasTooltipFromParent()
         {
             if (!_hasToolTipSet)
@@ -540,8 +565,6 @@ namespace AntDesign
             }
         }
 
-
-        private bool _shouldRender = true;
         protected override bool ShouldRender()
         {
             if (!_shouldRender)
@@ -692,8 +715,6 @@ namespace AntDesign
             if (firstRender)
             {
                 DomEventListener.AddShared<JsonElement>("window", "beforeunload", Reloading);
-                //DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
-                //DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
             }
             base.OnAfterRender(firstRender);
         }
@@ -1040,7 +1061,7 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// Detaches edge.
+        /// Detaches edge(s).
         /// </summary>        
         /// <returns>Whether detachment was successful. Returns true if no attachment existed.</returns>
         public bool DetachEdges()
@@ -1477,11 +1498,6 @@ namespace AntDesign
             }
         }
 
-        private double _trackedClientX;
-        private double _trackedClientY;
-        private double _trackedClientWidth;
-        private double _trackedClientHeight;
-
         private void OnMouseDownEdge(MouseEventArgs args, RangeEdge edge)
         {
             _mouseDown = !Disabled && !Parent.Disabled;
@@ -1907,16 +1923,8 @@ namespace AntDesign
             }
         }
 
-        private bool IsLeftAndRightChanged((double, double) value)
-        {
-            return (value.Item1 != LeftValue) && (value.Item2 != RightValue);
-        }
-
-        private (double, double) _value;
-        private MultiRangeSlider _parent;
-        private bool _hasAttachedEdgeWithGap;
-        private bool _hasAttachedEdge;
-        private Placement _tooltipPlacement;
+        private bool IsLeftAndRightChanged((double, double) value) =>
+            (value.Item1 != LeftValue) && (value.Item2 != RightValue);
 
         /// <summary>
         /// Gets or sets the value of the input. This should be used with two-way binding.

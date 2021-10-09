@@ -6,8 +6,17 @@ title:
 ---
 
 ## zh-CN
-基本滑动条。当 `range` 为 `true` 时，渲染为双滑块。当 `disabled` 为 `true` 时，滑块处于不可用状态。
+Edges in `MultiRangeSlider` can be joined in such a way, that two ranges can be changed at the same time. Attaching is executed by using `double mouse click` on an edge or by appropriate method call.
 
+#### Rules:
+- if two neighboring edges are in the same spot, they will be treated as both joined
+- if two edges are in the same spot but are not neighboring, the will be treated as in separate spots
+- cannot join edges of the same range
 
 ## en-US
-Basic slider. When `range` is `true`, display as dual thumb mode. When `disable` is `true`, the slider will not be interactable.
+Edges in `MultiRangeSlider` can be joined in such a way, that two ranges can be changed at the same time. Attaching is executed by using `double mouse click` on an edge or by appropriate method call.
+
+#### Rules:
+- if two neighboring edges are in the same spot, they will be treated as both joined
+- if two edges are in the same spot but are not neighboring, the will be treated as in separate spots
+- cannot join edges of the same range

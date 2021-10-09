@@ -17,7 +17,7 @@ namespace AntDesign
         /// <summary>
         /// Used for rendering select options manually.
         /// </summary>
-        [Parameter] 
+        [Parameter]
         public RenderFragment ChildContent { get; set; }
 
         /// <summary>
@@ -28,13 +28,16 @@ namespace AntDesign
         public string Height { get; set; }
 
         /// <summary>
-        /// Tick mark of Slider, type of key must be number, and must in closed interval [min, max], each mark can declare its own style
+        /// Tick mark of the `MultiRangeSlider`, type of key must 
+        /// be number, and must in closed interval [min, max], 
+        /// each mark can declare its own style.
         /// </summary>
         [Parameter]
         public RangeItemMark[] Marks { get; set; }
 
         /// <summary>
-        /// reverse the component
+        /// Render the sliders with scale starting form left side 
+        /// to right or from bottom towards top.
         /// </summary>
         [Parameter]
         public bool Reverse { get; set; }
@@ -52,7 +55,7 @@ namespace AntDesign
                 return false;
             }
             return item.Id == _items[0].Id;
-        }        
+        }
 
         protected override void OnParametersSet()
         {

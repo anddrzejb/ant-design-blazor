@@ -1,13 +1,24 @@
 ﻿---
-order: 4
+order: 5
 title:
   zh-CN: Equal Overlap (CN)
   en-US: Equal Overlap
 ---
 
 ## zh-CN
-基本滑动条。当 `range` 为 `true` 时，渲染为双滑块。当 `disabled` 为 `true` 时，滑块处于不可用状态。
+When overlapping is allowed, equal values are not treated as overlapping. That means the component will allow the same ending and starting value for neighboring edges. 
 
+This behavior can be altered by using a combination of parameters:
+- `EqualIsOverlap` - will treat values as "taken" 
+- `ExpandStep` - visual "unit" will expand to occupy the step fully
+
+A use case: when working with date periods.
 
 ## en-US
-Basic slider. When `range` is `true`, display as dual thumb mode. When `disable` is `true`, the slider will not be interactable.
+When overlapping is allowed, equal values are not treated as overlapping. That means the component will allow the same ending and starting value for neighboring edges. 
+
+This behavior can be altered by using a combination of parameters:
+- `EqualIsOverlap` - will treat values as "taken" 
+- `ExpandStep` - visual "unit" will expand to occupy the step fully
+
+A use case: when working with date periods.

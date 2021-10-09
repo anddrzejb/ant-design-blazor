@@ -29,11 +29,32 @@ namespace AntDesign
         private bool _isInitialized;
         private bool _oversized;
         private bool _orientationHasChanged;
+        private bool _expandStepHasChanged;
+        private double _visibleMin;
+        private double _visibleMax;
+        protected IEnumerable<(double, double)> _value;
+        private IEnumerable<(double, double)> _valueClone = null;
+        private bool _isTipFormatterDefault = true;
+        private bool _tooltipVisibleChanged;
+        private bool _tooltipPlacementChanged;
+        private double? _step = 1;
+        private int _precision;
+        private bool _reverse;
+        private bool _hasTooltipChanged;
+        private Func<double, string> _tipFormatter = (d) => d.ToString(LocaleProvider.CurrentLocale.CurrentCulture);
         private List<RangeItem> _items = new();
-        List<string> _keys = new();
+        private List<string> _keys = new();
         private Dictionary<string, (RangeItem leftNeighbour, RangeItem rightNeighbour, RangeItem item)> _boundaries;
         internal ElementReference _railRef;
         private ElementReference _scrollableAreaRef;
+        private string _trackSize = "";
+        private RangeItem _focusedItem;
+        private bool _vertical;
+        private bool _expandStep;
+        private bool _hasTooltip = true;
+        private Placement _tooltipPlacement;
+        private bool _tooltipVisible;
+        private RangeItemMark[] _marks;
 
         internal RangeItem ItemRequestingAttach { get; set; }
         internal RangeItem ItemRespondingToAttach { get; set; }
@@ -45,36 +66,24 @@ namespace AntDesign
         [CascadingParameter(Name = "RangeGroup")]
         public MultiRangeGroup Parent { get; set; }
 
-        [Parameter]
-        public Func<(RangeItem range, RangeEdge edge, double value), bool> OnEdgeMoving { get; set; }
-
-        [Parameter]
-        public EventCallback<(RangeItem range, RangeEdge edge, double value)> OnEdgeMoved { get; set; }
-
-        [Parameter]
-        public Func<(RangeItem left, RangeItem right), (bool allowAttaching, bool detachExistingOnCancel)> OnEdgeAttaching { get; set; }
-
-        [Parameter]
-        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeAttached { get; set; }
-
-        [Parameter]
-        public Func<(RangeItem left, RangeItem right), bool> OnEdgeDetaching { get; set; }
-
-        [Parameter]
-        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeDetached { get; set; }
-
+        /// <summary>
+        /// Use AllowOverlapping to toggle overlapping mode.
+        /// </summary>
         [Parameter]
         public bool AllowOverlapping { get; set; }
 
         /// <summary>
-        /// If true, the slider will not be intractable
+        /// Used for rendering range items manually.
         /// </summary>
         [Parameter]
-        public bool Disabled { get; set; }
+        public RenderFragment ChildContent { get; set; }
 
+        /// <summary>
+        /// Collection of data objects implementing <see cref="IRangeItemData"/> 
+        /// that will be used to render the ranges. 
+        /// </summary>
         [Parameter]
         public IEnumerable<IRangeItemData> Data { get; set; }
-
 
         /// <summary>
         /// Gets or sets a callback that updates the bound value.
@@ -82,9 +91,22 @@ namespace AntDesign
         [Parameter]
         public EventCallback<IEnumerable<IRangeItemData>> DataChanged { get; set; }
 
-        private bool _expandStepHasChanged;
         /// <summary>
-        /// Whether to merge visually neighboring steps.
+        /// If true, the slider will not be intractable
+        /// </summary>
+        [Parameter]
+        public bool Disabled { get; set; }
+
+        /// <summary>
+        /// Useful only when <see cref="AllowOverlapping"/>is set to false.
+        /// Does not allow edges to meet, because treats equal edge values
+        /// as overlapping. 
+        /// </summary>
+        [Parameter]
+        public bool EqualIsOverlap { get; set; }
+
+        /// <summary>
+        /// Whether to expand visually each step.
         /// </summary>
         [Parameter]
         public bool ExpandStep
@@ -102,64 +124,26 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// Useful only when <see cref="AllowOverlapping"/>is set to false.
-        /// Does not allow edges to meet, because treats equal edge values
-        /// as overlapping. 
+        /// Will not render Tooltip if set to false
         /// </summary>
         [Parameter]
-        public bool EqualIsOverlap { get; set; }
-
-        /// <summary>
-        /// If true, the slider will be vertical.
-        /// </summary>
-        [Parameter]
-        public bool Vertical
+        public bool HasTooltip
         {
-            get => _vertical;
+            get => _hasTooltip;
             set
             {
-                if (_vertical != value)
+                if (_hasTooltip != value)
                 {
-                    _orientationHasChanged = true;
-                    _vertical = value;
+                    _hasTooltipChanged = true;
+                    _hasTooltip = value;
                 }
-            }
-        }
-
-        private void SetOrientationStyles()
-        {
-            if (_vertical)
-            {
-                //padding is 20px of the track width + "margin" of possible scroll;
-                //without padding, vertical scroll hides most of the rendered elements
-                if (Oversized)
-                {
-                    _overflow = "overflow-y: auto;overflow-x: hidden; padding-right: 8px; height: inherit;";
-                }
-                else
-                {
-                    _overflow = "display: inline;";
-                }
-                _railStyle = $"height: calc(100% - {2 * VerticalTrackAdjust}px);top: {VerticalTrackAdjust}px;";
-                _sizeType = "height";
-            }
-            else
-            {
-                if (Oversized)
-                {
-                    _overflow = "overflow-x: auto; height: inherit;" + (HasTooltip ? "padding-top: 40px;" : ""); //padding-top needed, otherwise tooltips are not visible
-                }
-                else
-                {
-                    _overflow = "display: inline;";
-                }
-                _sizeType = "width";
-                _railStyle = "";
             }
         }
 
         /// <summary>
-        /// Tick mark of Slider, type of key must be number, and must in closed interval [min, max], each mark can declare its own style
+        /// Tick mark of the `MultiRangeSlider`, type of key must 
+        /// be number, and must in closed interval [min, max], 
+        /// each mark can declare its own style.
         /// </summary>
         [Parameter]
         public RangeItemMark[] Marks { get => _marks; set => _marks = value; }
@@ -177,10 +161,64 @@ namespace AntDesign
         public double Min { get; set; } = 0;
 
         /// <summary>
-        /// reverse the component
+        /// Called when changes are done (onmouseup and onkeyup).
         /// </summary>
-        private bool _reverse;
+        [Parameter]
+        public EventCallback<(double, double)> OnAfterChange { get; set; }
 
+        /// <summary>
+        /// Called before edge is attached. If returns 'false', attaching is stopped.
+        /// </summary>
+        [Parameter]
+        public Func<(RangeItem left, RangeItem right), (bool allowAttaching, bool detachExistingOnCancel)> OnEdgeAttaching { get; set; }
+
+        /// <summary>
+        /// Called after edge is attached.
+        /// </summary>
+        [Parameter]
+        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeAttached { get; set; }
+
+        /// <summary>
+        /// Called before edge is detached. If returns 'false', detaching is stopped.
+        /// </summary>
+        [Parameter]
+        public Func<(RangeItem left, RangeItem right), bool> OnEdgeDetaching { get; set; }
+
+        /// <summary>
+        /// Called after edge is detached.
+        /// </summary>
+        [Parameter]
+        public EventCallback<(RangeItem left, RangeItem right)> OnEdgeDetached { get; set; }
+
+        /// <summary>
+        /// Called before edge is moved. If returns `false`, moving is canceled.
+        /// </summary>
+        [Parameter]
+        public Func<(RangeItem range, RangeEdge edge, double value), bool> OnEdgeMoving { get; set; }
+
+        /// <summary>
+        /// Called after edge is moved.
+        /// </summary>
+        [Parameter]
+        public EventCallback<(RangeItem range, RangeEdge edge, double value)> OnEdgeMoved { get; set; }
+
+        /// <summary>
+        /// Called when the user changes one of the values.
+        /// </summary>
+        [Parameter]
+        public EventCallback<(double, double)> OnChange { get; set; }
+
+        /// <summary>
+        /// Used to style overflowing container. Avoid using unless in oversized 
+        /// mode (when `VisibleMin` > `Min` and/or `VisibleMax` < 'Max' ).
+        /// </summary>
+        [Parameter]
+        public string OverflowStyle { get; set; } = "";
+
+        /// <summary>
+        /// Render the slider with scale starting form left side 
+        /// to right or from bottom towards top.
+        /// </summary>
         [Parameter]
         public bool Reverse
         {
@@ -201,13 +239,9 @@ namespace AntDesign
 
         /// <summary>
         /// The granularity the slider can step through values. 
-        /// Must greater than 0, and be divided by (<see cref="VisibleMax"/> - <see cref="VisibleMin"/>) . 
+        /// Must be greater than 0, and be divided by (<see cref="VisibleMax"/> - <see cref="VisibleMin"/>) . 
         /// When <see cref="Marks"/> no null, <see cref="Step"/> can be null.
         /// </summary>
-        private double? _step = 1;
-
-        private int _precision;
-
         [Parameter]
         public double? Step
         {
@@ -229,22 +263,23 @@ namespace AntDesign
             }
         }
 
-        private bool _hasTooltipChanged;
+        /// <summary>
+        /// Slider will pass its value to tipFormatter, and display its value in Tooltip
+        /// </summary>
         [Parameter]
-        public bool HasTooltip
+        public Func<double, string> TipFormatter
         {
-            get => _hasTooltip;
+            get { return _tipFormatter; }
             set
             {
-                if (_hasTooltip != value)
-                {
-                    _hasTooltipChanged = true;
-                    _hasTooltip = value;
-                }
+                _tipFormatter = value;
+                _isTipFormatterDefault = false;
             }
         }
 
-        bool _tooltipPlacementChanged;
+        /// <summary>
+        /// Set `Tooltip` display position. 
+        /// </summary>
         [Parameter]
         public Placement TooltipPlacement
         {
@@ -259,7 +294,10 @@ namespace AntDesign
             }
         }
 
-        bool _tooltipVisibleChanged;
+        /// <summary>
+        /// If `true`, `Tooltip` will show always, or it will 
+        /// not show anyway, even if dragging or hovering.
+        /// </summary>
         [Parameter]
         public bool TooltipVisible
         {
@@ -274,93 +312,8 @@ namespace AntDesign
             }
         }
 
-
         /// <summary>
-        /// Slider will pass its value to tipFormatter, and display its value in Tooltip
-        /// </summary>
-        private bool _isTipFormatterDefault = true;
-
-        private Func<double, string> _tipFormatter = (d) => d.ToString(LocaleProvider.CurrentLocale.CurrentCulture);
-
-        [Parameter]
-        public Func<double, string> TipFormatter
-        {
-            get { return _tipFormatter; }
-            set
-            {
-                _tipFormatter = value;
-                _isTipFormatterDefault = false;
-            }
-        }
-
-        /// <summary>
-        /// Fire when changes are done (onmouseup and onkeyup).
-        /// </summary>
-        [Parameter]
-        public EventCallback<(double, double)> OnAfterChange { get; set; }
-
-        /// <summary>
-        /// Callback function that is fired when the user changes one of the values.
-        /// </summary>
-        [Parameter]
-        public EventCallback<(double, double)> OnChange { get; set; }
-
-        [Parameter]
-        public double VisibleMin
-        {
-            get => _visibleMin;
-            set
-            {
-                var hasChanged = value != _visibleMin;
-                if (hasChanged)
-                {
-                    if (value < Min)
-                    {
-                        _visibleMin = Min;
-                    }
-                    else
-                    {
-                        _visibleMin = value;
-                    }
-                    Oversized = Min < _visibleMin || Max > _visibleMax;
-                    SetOrientationStyles();
-                    _trackSize = GetRangeFullSize();
-                }
-
-            }
-        }
-
-        [Parameter]
-        public double VisibleMax
-        {
-            get => _visibleMax;
-            set
-            {
-                var hasChanged = value != _visibleMax;
-                if (hasChanged)
-                {
-                    if (value > Max)
-                    {
-                        _visibleMax = Max;
-                    }
-                    else
-                    {
-                        _visibleMax = value;
-                    }
-                    Oversized = Min < _visibleMin || Max > _visibleMax;
-                    SetOrientationStyles();
-                    _trackSize = GetRangeFullSize();
-                }
-            }
-        }
-
-        private double _visibleMin;
-        private double _visibleMax;
-        protected IEnumerable<(double, double)> _value;
-        private IEnumerable<(double, double)> _valueClone = null;
-
-        /// <summary>
-        /// Get or set the selected values.
+        /// Get or set the values.
         /// </summary>
         [Parameter]
         public override IEnumerable<(double, double)> Value
@@ -404,10 +357,114 @@ namespace AntDesign
         }
 
         /// <summary>
-        /// Used to style overflowing container. Avoid using unless in oversized mode.
+        /// If true, the slider will be vertical.
         /// </summary>
         [Parameter]
-        public string OverflowStyle { get; set; } = "";
+        public bool Vertical
+        {
+            get => _vertical;
+            set
+            {
+                if (_vertical != value)
+                {
+                    _orientationHasChanged = true;
+                    _vertical = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Used in connection with <see cref="VisibleMax"/>. If grater than 
+        /// <see cref="Min"/>, the slider is rendered with an overflow 
+        /// (oversized/zoomed). If lesser than <see cref="Min"/>, will be set
+        /// to <see cref="Min"/>;
+        /// </summary>
+        [Parameter]
+        public double VisibleMin
+        {
+            get => _visibleMin;
+            set
+            {
+                var hasChanged = value != _visibleMin;
+                if (hasChanged)
+                {
+                    if (value < Min)
+                    {
+                        _visibleMin = Min;
+                    }
+                    else
+                    {
+                        _visibleMin = value;
+                    }
+                    Oversized = Min < _visibleMin || Max > _visibleMax;
+                    SetOrientationStyles();
+                    _trackSize = GetRangeFullSize();
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// Used in connection with <see cref="VisibleMin"/>. If lesser than 
+        /// <see cref="Max"/>, the slider is rendered with an overflow 
+        /// (oversized/zoomed). If grater than <see cref="Max"/>, will be set
+        /// to <see cref="Max"/>;
+        /// </summary>
+        [Parameter]
+        public double VisibleMax
+        {
+            get => _visibleMax;
+            set
+            {
+                var hasChanged = value != _visibleMax;
+                if (hasChanged)
+                {
+                    if (value > Max)
+                    {
+                        _visibleMax = Max;
+                    }
+                    else
+                    {
+                        _visibleMax = value;
+                    }
+                    Oversized = Min < _visibleMin || Max > _visibleMax;
+                    SetOrientationStyles();
+                    _trackSize = GetRangeFullSize();
+                }
+            }
+        }
+
+        private void SetOrientationStyles()
+        {
+            if (_vertical)
+            {
+                //padding is 20px of the track width + "margin" of possible scroll;
+                //without padding, vertical scroll hides most of the rendered elements
+                if (Oversized)
+                {
+                    _overflow = "overflow-y: auto;overflow-x: hidden; padding-right: 8px; height: inherit;";
+                }
+                else
+                {
+                    _overflow = "display: inline;";
+                }
+                _railStyle = $"height: calc(100% - {2 * VerticalTrackAdjust}px);top: {VerticalTrackAdjust}px;";
+                _sizeType = "height";
+            }
+            else
+            {
+                if (Oversized)
+                {
+                    _overflow = "overflow-x: auto; height: inherit;" + (HasTooltip ? "padding-top: 40px;" : ""); //padding-top needed, otherwise tooltips are not visible
+                }
+                else
+                {
+                    _overflow = "display: inline;";
+                }
+                _sizeType = "width";
+                _railStyle = "";
+            }
+        }
 
         /// <summary>
         ///     The Method is called every time if the value of the @bind-Values was changed by the two-way binding.
@@ -446,11 +503,6 @@ namespace AntDesign
             _value = temp;
             _ = OnValueChangeAsync(temp);
         }
-
-        /// <summary>
-        /// Used for rendering select options manually.
-        /// </summary>
-        [Parameter] public RenderFragment ChildContent { get; set; }
 
         protected override void OnInitialized()
         {
@@ -913,7 +965,6 @@ namespace AntDesign
             return Formatter.ToPercentWithoutBlank((key - Min) / MinMaxDelta);
         }
 
-        private string _trackSize = "";
         private string GetRangeFullSize()
         {
             if (!Oversized)
@@ -926,14 +977,6 @@ namespace AntDesign
                 return $"{_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%;";
             }
         }
-
-        private RangeItem _focusedItem;
-        private bool _vertical;
-        private bool _expandStep;
-        private bool _hasTooltip = true;
-        private Placement _tooltipPlacement;
-        private bool _tooltipVisible;
-        private RangeItemMark[] _marks;
 
         internal void SetRangeItemFocus(RangeItem item, bool isFocused)
         {

@@ -6,8 +6,8 @@ title:
 ---
 
 ## zh-CN
-基本滑动条。当 `range` 为 `true` 时，渲染为双滑块。当 `disabled` 为 `true` 时，滑块处于不可用状态。
+Parameters `VisibleMin` & `VisibleMax` can be used to simulate zoom-in & zoom-out functionality. The are in tight relationship with `Min` & `Max`. `VisibleMin` cannot be lesser than `Min` and `VisibleMax` cannot be greater than `Max`.
 
 
 ## en-US
-Basic slider. When `range` is `true`, display as dual thumb mode. When `disable` is `true`, the slider will not be interactable.
+Parameters `VisibleMin` & `VisibleMax` can be used to simulate zoom-in & zoom-out functionality. The are in tight relationship with `Min` & `Max`. `VisibleMin` cannot be lesser than `Min` and `VisibleMax` cannot be greater than `Max`.

@@ -6,8 +6,13 @@ title:
 ---
 
 ## zh-CN
-基本滑动条。当 `range` 为 `true` 时，渲染为双滑块。当 `disabled` 为 `true` 时，滑块处于不可用状态。
-
+3 types of data bindins:
+1. Each `RangeItem` is added and bounded individually.
+2. Bind `Value` parameter to an object of type `IEnumerable<(double, double)>`. `MultiRangeSlider` will generate a `RangeItem` for every entry in the collection.
+3. Bind `Data` parameter to a collection (`IEnumerable`) of objects that implements `AntDesign.IRangeItemData`. This interface contains properties that allow visual customization of each range.
 
 ## en-US
-Basic slider. When `range` is `true`, display as dual thumb mode. When `disable` is `true`, the slider will not be interactable.
+3 types of data bindins:
+1. Each `RangeItem` is added and bounded individually.
+2. Bind `Value` parameter to an object of type `IEnumerable<(double, double)>`. `MultiRangeSlider` will generate a `RangeItem` for every entry in the collection.
+3. Bind `Data` parameter to a collection (`IEnumerable`) of objects that implements `AntDesign.IRangeItemData`. This interface contains properties that allow visual customization of each range.
