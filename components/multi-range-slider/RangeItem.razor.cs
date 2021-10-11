@@ -1478,8 +1478,7 @@ namespace AntDesign
             }
 
             //evaluate clicked position in respect to each edge
-            DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
-            DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
+            await AddJsEvents();
             (double sliderOffset, double sliderLength, double sliderWidth, double sliderHeight)
                 = await GetSliderDimensions(Parent._railRef);
             _trackedClientWidth = sliderWidth;
@@ -1498,15 +1497,14 @@ namespace AntDesign
             }
         }
 
-        private void OnMouseDownEdge(MouseEventArgs args, RangeEdge edge)
+        private async Task OnMouseDownEdge(MouseEventArgs args, RangeEdge edge)
         {
             _mouseDown = !Disabled && !Parent.Disabled;
             if (!_mouseDown)
             {
                 return;
             }
-            DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove);
-            DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
+            await AddJsEvents();
             _mouseDown = true;
             SetFocus(true);
             Parent.SetRangeItemFocus(this, true);
@@ -1611,8 +1609,7 @@ namespace AntDesign
             }
             if (mouseWasClicked)
             {
-                DomEventListener.RemoveShared<JsonElement>("window", "mousemove", OnMouseMove);
-                DomEventListener.RemoveShared<JsonElement>("window", "mouseup", OnMouseUp);
+                RemoveJsEvents();
 #pragma warning disable CS4014 // Does not return anything, fire & forget            
                 RaiseOnAfterChangeCallback(() => _valueCache != _value);
 #pragma warning restore CS4014 // Does not return anything, fire & forget
@@ -1634,6 +1631,28 @@ namespace AntDesign
 
             _initialFirstValue = _firstValue;
             _initialLastValue = _lastValue;
+        }
+
+        private bool _jsEventsSet;
+        private async Task AddJsEvents()
+        {
+            await Task.Yield();
+            if (!_jsEventsSet)
+            {
+                _jsEventsSet = true;
+                DomEventListener.AddShared<JsonElement>("window", "mousemove", OnMouseMove, false);
+                DomEventListener.AddShared<JsonElement>("window", "mouseup", OnMouseUp);
+            }
+        }
+
+        private void RemoveJsEvents()
+        {
+            if (_jsEventsSet)
+            {
+                DomEventListener.RemoveShared<JsonElement>("window", "mousemove", OnMouseMove);
+                DomEventListener.RemoveShared<JsonElement>("window", "mouseup", OnMouseUp);
+                _jsEventsSet = false;
+            }
         }
 
         private Task RaiseOnAfterChangeCallback(Func<bool> predicate)
