@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Globalization;
 using AntDesign.JsInterop;
+using AntDesign.TestKit;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Xunit.Abstractions;
 
 namespace AntDesign.Tests
 {
@@ -15,7 +17,7 @@ namespace AntDesign.Tests
 
         public Mock<IDomEventListener> MockedDomEventListener { get; set; } = new Mock<IDomEventListener>();
 
-        public AntDesignTestBase(bool useMoq = false)
+        public AntDesignTestBase()
         {
             Services.AddAntDesign();
 
@@ -24,6 +26,11 @@ namespace AntDesign.Tests
             JSInterop.SetupVoid(JSInteropConstants.OverlayComponentHelper.DeleteOverlayFromContainer, _ => true);
 
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+        }
+
+        public AntDesignTestBase(ITestOutputHelper outputHelper): this()
+        {
+            Services.AddXunitLogger(outputHelper);
         }
 
         public new void Dispose()
