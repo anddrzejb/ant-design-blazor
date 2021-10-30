@@ -980,7 +980,6 @@ namespace AntDesign
             }
             else
             {
-                //DebugHelper.WriteLine($" {_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%;");
                 return $"{_sizeType}: {(Max - Min) / (VisibleMax - VisibleMin) * 100}%;";
             }
         }
