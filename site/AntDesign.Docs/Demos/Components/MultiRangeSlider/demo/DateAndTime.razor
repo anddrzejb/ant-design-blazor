@@ -84,6 +84,11 @@
         public OneOf<Color, string> FocusBorderColor { get; set; }
         public Action<(double, double)> OnChange { get; set; }
         public Action<(double, double)> OnAfterChange { get; set; }
+        public bool HasFocus { get; set; }
+        OneOf<Color, string>? IRangeItemData.FontColor { get; set; }
+        OneOf<Color, string>? IRangeItemData.Color { get; set; }
+        OneOf<Color, string>? IRangeItemData.FocusColor { get; set; }
+        OneOf<Color, string>? IRangeItemData.FocusBorderColor { get; set; }
     }
 
     IEnumerable<IRangeItemData> _timeData = new List<TimeData>
