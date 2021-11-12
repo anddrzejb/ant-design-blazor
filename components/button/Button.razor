@@ -6,6 +6,7 @@
             @onclick="HandleOnClick" disabled="@Disabled"
             @onclick:stopPropagation="@OnClickStopPropagation"
             @onmouseup="OnMouseUp"
+            title=@Title
             ant-click-animating-without-extra-node="@(this._animating ? "true":"false")">
         @if (Loading)
         {

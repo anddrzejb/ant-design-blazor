@@ -108,6 +108,12 @@ namespace AntDesign
         public string Size { get; set; } = AntSizeLDSType.Default;
 
         /// <summary>
+        /// Set html Title attribute <see href="https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/title"/>
+        /// </summary>
+        [Parameter]
+        public string Title { get; set; } = "";
+
+        /// <summary>
         /// Type of the button.
         /// </summary>
         [Parameter]
