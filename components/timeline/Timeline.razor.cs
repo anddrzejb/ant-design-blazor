@@ -73,6 +73,18 @@ namespace AntDesign
             }
         }
 
+        /// <summary>
+        /// Define tail style (dashed, color, etc).
+        /// </summary>
+        [Parameter]
+        public string TailStyle { get; set; }
+
+        /// <summary>
+        /// Define tail css class.
+        /// </summary>
+        [Parameter]
+        public string TailClass { get; set; }
+
         private static readonly RenderFragment _loadingDot = builder =>
         {
             builder.OpenComponent<Icon>(0);
@@ -97,6 +109,7 @@ namespace AntDesign
         private bool _waitingItemUpdate = false;
         private TimelineMode? _mode;
         private bool _hasLabel;
+        private ClassMapper _tailClass = new();
 
         protected override void OnInitialized()
         {
@@ -133,6 +146,11 @@ namespace AntDesign
                 .If($"{prefix}-reverse", () => Reverse)
                 .If($"{prefix}-label", () => _hasLabel)
                 .If($"{prefix}-rtl", () => RTL);
+
+            _tailClass.Clear()
+                .Add($"{prefix}-item-tail")
+                .If($"{TailClass}", () => !string.IsNullOrWhiteSpace(TailClass));
+
         }
 
         internal void RemoveItem(TimelineItem item)
