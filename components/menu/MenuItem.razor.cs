@@ -46,6 +46,13 @@ namespace AntDesign
         [Parameter]
         public RenderFragment IconTemplate { get; set; }
 
+        /// <summary>
+        /// Css class that will be added to <see cref="Overlay"/>
+        /// (which will nest <see cref="Tooltip"/>).
+        /// </summary>
+        [Parameter]
+        public string OverlayClass { get; set; }
+
         internal bool IsSelected { get; private set; }
         internal bool FirstRun { get; set; } = true;
         private string _key;
@@ -54,6 +61,7 @@ namespace AntDesign
 
         private int PaddingLeft => RootMenu.InternalMode == MenuMode.Inline ? ((ParentMenu?.Level ?? 0) + 1) * RootMenu?.InlineIndent ?? 0 : 0;
 
+        private ClassMapper _overlayClass = new ClassMapper();
         private void SetClass()
         {
             string prefixCls = $"{RootMenu.PrefixCls}-item";
@@ -63,6 +71,11 @@ namespace AntDesign
                 .Add(prefixCls)
                 .If($"{prefixCls}-selected", () => IsSelected)
                 .If($"{prefixCls}-disabled", () => Disabled);
+
+            _overlayClass
+                .Clear()
+                .If(RootMenu.OverlayClass, () => !string.IsNullOrWhiteSpace(RootMenu.OverlayClass))
+                .If(OverlayClass, () => !string.IsNullOrWhiteSpace(OverlayClass));
         }
 
         protected override void Dispose(bool disposing)

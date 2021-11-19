@@ -113,6 +113,13 @@ namespace AntDesign
             }
         }
 
+        /// <summary>
+        /// Css class that will be added to <see cref="Overlay"/>
+        /// (which will nest <see cref="Tooltip"/>).
+        /// </summary>
+        [Parameter]
+        public string OverlayClass { get; set; }
+
         [Parameter]
         public EventCallback<string[]> SelectedKeysChanged { get; set; }
 
