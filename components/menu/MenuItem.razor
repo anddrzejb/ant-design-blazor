@@ -5,7 +5,7 @@
 	@* There is no need to render the tooltip if there is no inline mode. Tooltip will be only showing menu content if menu is collapsed to icon version && only for root menu  *@
 	@if (RootMenu.Mode == MenuMode.Inline && ParentMenu is null)
 	{
-		<Tooltip OverlayClassName="@_overlayClass.Class" Title="@content(this)" Placement="@Placement.Right" Disabled="TooltipDisabled">
+		<Tooltip OverlayClassName="@_overlayClass.Class" Title="@_content(this)" Placement="@Placement.Right" Disabled="TooltipDisabled">
 			<Unbound Context="tooltip">
                 <li class="@ClassMapper.Class" role="menuitem" style="@((PaddingLeft>0? $"padding-left:{PaddingLeft}px;":"")+@Style)" @onclick="HandleOnClick" @key="Key" @ref="tooltip.Current">
                     @if (IconTemplate != null)
@@ -21,11 +21,11 @@
                     <span class="ant-menu-title-content">
                         @if (RouterLink == null)
                         {
-                            @content(this)
+                            @_content(this)
                         }
                         else
                         {
-                            <MenuLink Href="@RouterLink" Match="@RouterMatch">@content(this)</MenuLink>
+                            <MenuLink Href="@RouterLink" Match="@RouterMatch">@_content(this)</MenuLink>
                         }
                     </span>
                 </li>
@@ -43,11 +43,11 @@
 			<span class="ant-menu-title-content">
 				@if (RouterLink == null)
 				{
-					@content(this)
+					@_content(this)
 				}
 				else
 				{
-					<MenuLink Href="@RouterLink" Match="@RouterMatch">@content(this)</MenuLink>
+					<MenuLink Href="@RouterLink" Match="@RouterMatch">@_content(this)</MenuLink>
 				}
 			</span>
 		</li>
@@ -55,7 +55,7 @@
 </CascadingValue>
 
 @code {
-	RenderFragment<MenuItem> content = item =>
+	RenderFragment<MenuItem> _content = (item) =>
 	@<Template>
 		@if (item.Title != null)
 		{

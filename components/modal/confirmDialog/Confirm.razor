@@ -48,32 +48,36 @@
                         var onClickEvent = new EventCallback<MouseEventArgs>(this, onClick);
                         Button innerBtnRef = null;
                         var children = props.ChildContent!.Value;
-                        RenderFragment compontent = (@<Button @ref="@innerBtnRef"
-                                                              OnClick="@onClickEvent"
-                                                              Block="@props.Block"
-                                                              Ghost="@props.Ghost"
-                                                              Loading="@props.Loading"
-                                                              Type="@props.Type"
-                                                              Shape="@props.Shape"
-                                                              Size="@props.Size"
-                                                              Icon="@props.Icon"
-                                                              Disabled="@props.Disabled"
-                                                              Danger="@props.IsDanger"
-                                                              Id="@id"
-                                                              >
-                        @{
-                            if (children.IsT0)
-                            {
-                                @(children.AsT0)
-                            }
-                            else
-                            {
-                                @(children.AsT1)
-                            }
+                        RenderFragment compontent = default;
+                        if (props.Visible) 
+                        {
+                            compontent = (@<Button @ref="@innerBtnRef"
+                                                                  OnClick="@onClickEvent"
+                                                                  Block="@props.Block"
+                                                                  Ghost="@props.Ghost"
+                                                                  Loading="@props.Loading"
+                                                                  Type="@props.Type"
+                                                                  Shape="@props.Shape"
+                                                                  Size="@props.Size"
+                                                                  Icon="@props.Icon"
+                                                                  Disabled="@props.Disabled"
+                                                                  Danger="@props.IsDanger"
+                                                                  Id="@id"
+                                                                  >
+                                @{
+                                    if (children.IsT0)
+                                    {
+                                        @(children.AsT0)
+                                    }
+                                    else
+                                    {
+                                        @(children.AsT1)
+                                    }
+                                }
+                            </Button>);
                         }
-                    </Button>);
-                   return compontent;
-                }
+                        return compontent;
+                    }
                 }
                 @switch (Config.ConfirmButtons)
                 {

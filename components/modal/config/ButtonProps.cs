@@ -24,6 +24,11 @@ namespace AntDesign
 
         public bool Disabled { get; set; }
 
+        /// <summary>
+        /// Allow hiding of a button (or rather not rendering at all)
+        /// </summary>
+        public bool Visible { get; set; } = true;
+
         private bool? _danger;
         public bool? Danger { get => _danger; set => _danger = value; }
 

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>net5;</TargetFrameworks>
+    <TargetFrameworks>net6</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <UseDataCollector>true</UseDataCollector>
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\components\AntDesign.csproj" />
+    <ProjectReference Include="..\..\components\AntDesign.csproj" AdditionalProperties="IsUnderTest=true" />
     <ProjectReference Include="..\AntDesign.TestKit\AntDesign.TestKit.csproj" />
   </ItemGroup>
 </Project>

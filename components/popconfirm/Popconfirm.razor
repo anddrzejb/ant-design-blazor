@@ -49,7 +49,7 @@
                             </div>
                         </div>
                         <div class="ant-popover-buttons">
-                            @if (CancelButtonProps != null)
+                            @if (CancelButtonProps != null && CancelButtonProps.Visible)
                             {
                                 <Button OnClick="@Cancel" Size="@AntSizeLDSType.Small"
                                         Block="@CancelButtonProps.Block"
@@ -63,13 +63,13 @@
                                     @CancelText
                                 </Button>
                             }
-                            else
+                            else if (CancelButtonProps is null)
                             {
                                 <Button OnClick="@Cancel" Size="@AntSizeLDSType.Small">
                                     @CancelText
                                 </Button>
                             }
-                            @if (OkButtonProps != null)
+                            @if (OkButtonProps != null && OkButtonProps.Visible)
                             {
                                 <Button OnClick="@Confirm" Size="small" Type="@OkType"
                                         Block="@OkButtonProps.Block"
@@ -82,7 +82,7 @@
                                     @OkText
                                 </Button>
                             }
-                            else
+                            else if (OkButtonProps is null)
                             {
                                 <Button OnClick="@Confirm" Size="small" type="@OkType">
                                     @OkText

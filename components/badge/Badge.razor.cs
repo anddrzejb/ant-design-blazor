@@ -54,6 +54,9 @@ namespace AntDesign
         [Parameter]
         public ValueTuple<int, int> Offset { get; set; }
 
+        [Parameter]
+        public EventCallback OnClick { get; set; }
+
         /// <summary>
         /// Max count to show
         /// </summary>

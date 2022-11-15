@@ -28,7 +28,7 @@
         }
         if (_showSup)
         {
-            <sup class="@CountClassMapper.Class" style="@CountStyle @DotColorStyle @Style" title="@Count">
+            <sup class="@CountClassMapper.Class" style="@CountStyle @DotColorStyle @Style" title="@(string.IsNullOrEmpty(Title)?Count:Title)" @onclick=@OnClick>
                 @if (!Dot && !HasStatusOrColor)
                 {
                     @if (Count <= OverflowCount)
