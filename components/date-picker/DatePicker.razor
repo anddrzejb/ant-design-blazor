@@ -38,7 +38,7 @@
                                  OnKeyDown="@OnKeyDown"
                                  OnInput="e => OnInput(e, 0)"
                                  OnBlur="e => OnBlur(0)"
-                                 Onfocus="e => AutoFocus = true"
+                                 Onfocus="e => Task.FromResult(AutoFocus = true)"
                                  ShowTime="@(Picker == DatePickerType.Time)"
                                  OnClickClear="e => ClearValue(0)"
                                  HtmlInputSize="@HtmlInputSize"

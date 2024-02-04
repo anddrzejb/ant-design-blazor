@@ -126,12 +126,17 @@ namespace AntDesign
         [Parameter]
         public Trigger TriggerSubMenuAction { get; set; } = Trigger.Hover;
 
-        internal MenuMode InternalMode { get; private set; }
+        internal MenuMode InternalMode
+        {
+            get => _internalMode;
+            private set => _internalMode = value;
+        }
 
         private string[] _openKeys;
         private string[] _selectedKeys;
         private bool _inlineCollapsed;
         private MenuMode _mode = MenuMode.Vertical;
+        private MenuMode _internalMode;
 
         public List<SubMenu> Submenus { get; set; } = new List<SubMenu>();
         public List<MenuItem> MenuItems { get; set; } = new List<MenuItem>();
